@@ -3,6 +3,8 @@
 import { GraduationCap, ShieldCheck } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useTranslation } from '@/i18n/use-translation'
+import { mainCardShadow } from '@/utils/theme'
+import { cn } from '@/lib/utils'
 
 interface LoginCardProps {
   children: ReactNode
@@ -14,7 +16,7 @@ export function LoginCard({ children }: LoginCardProps) {
   return (
     <div className="login-card-wrap w-full max-w-[400px]">
       <div className="login-card-shell">
-        <div className="login-card-inner">
+        <div className={cn('login-card-inner', mainCardShadow)}>
           <div className="login-card-accent" aria-hidden />
           <div className="login-card-ambient login-card-ambient-1" aria-hidden />
           <div className="login-card-ambient login-card-ambient-2" aria-hidden />

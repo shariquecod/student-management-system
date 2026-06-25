@@ -15,8 +15,22 @@ export default function AuthLayout({
   const { isAuthenticated, isLoading } = useAppSelector((state) => state.auth)
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      dispatch(initAuth())
+    if (isAuthenticated) return
+
+    const run = () => dispatch(initAuth())
+
+    let timer: ReturnType<typeof setTimeout> | undefined
+    let idleId: number | undefined
+
+    if ('requestIdleCallback' in window) {
+      idleId = window.requestIdleCallback(run, { timeout: 800 })
+    } else {
+      timer = setTimeout(run, 0)
+    }
+
+    return () => {
+      if (idleId !== undefined) window.cancelIdleCallback(idleId)
+      if (timer !== undefined) clearTimeout(timer)
     }
   }, [dispatch, isAuthenticated])
 

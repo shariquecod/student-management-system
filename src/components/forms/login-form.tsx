@@ -42,7 +42,7 @@ interface LoginFormProps {
 export function LoginForm({ variant = 'default' }: LoginFormProps) {
   const dispatch = useAppDispatch()
   const { t } = useTranslation()
-  const { error, isLoading } = useAppSelector((s) => s.auth)
+  const { error } = useAppSelector((s) => s.auth)
   const [showPassword, setShowPassword] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
@@ -84,7 +84,7 @@ export function LoginForm({ variant = 'default' }: LoginFormProps) {
     }
   }
 
-  const busy = submitting || isLoading
+  const busy = submitting
   const immersive = variant === 'immersive'
 
   if (immersive) {

@@ -1,209 +1,261 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { PageHeader, GlassPanel, StatusBadge, BentoCard, BentoGrid } from '@/components/shared'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Plus } from 'lucide-react'
-import { fetchExams, createExam, fetchClasses, getClass, fetchExamResults, saveExamResults } from '@/services/school-api'
-import type { Exam, ExamResult, Student, SubjectMark } from '@/types'
+import { useCallback, useState } from 'react'
+import dynamic from 'next/dynamic'
+import { FileText, BookOpen, Users, Award } from 'lucide-react'
+import { BentoGrid, BentoCard, AnimatedStat } from '@/components/shared'
+import {
+  ExamsHero,
+  ExamsFilters,
+  ExamsDataTable,
+  ExamsStatSkeleton,
+} from '@/components/exams'
+import type { ExamFormValues } from '@/components/exams'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useExamsDirectory } from '@/hooks/use-exams-directory'
+import { useExamsMarks } from '@/hooks/use-exams-marks'
+import { createExam } from '@/services/school-api'
+import type { Exam, ExamResult } from '@/types'
 import { toast } from 'sonner'
 import { useTranslation } from '@/i18n/use-translation'
 
+const ExamsMarksPanel = dynamic(
+  () => import('@/components/exams/exams-marks-panel').then((m) => m.ExamsMarksPanel),
+  { loading: () => <div className="dashboard-skeleton h-40 rounded-xl" /> }
+)
+
+const ExamsResultsPanel = dynamic(
+  () => import('@/components/exams/exams-results-panel').then((m) => m.ExamsResultsPanel),
+  { loading: () => <div className="dashboard-skeleton h-40 rounded-xl" /> }
+)
+
+const ExamsCreateDialog = dynamic(
+  () => import('@/components/exams/exams-create-dialog').then((m) => m.ExamsCreateDialog),
+  { ssr: false }
+)
+
+const ExamsResultDialog = dynamic(
+  () => import('@/components/exams/exams-result-dialog').then((m) => m.ExamsResultDialog),
+  { ssr: false }
+)
+
 export default function ExamsPage() {
   const { t } = useTranslation()
-  const [exams, setExams] = useState<Exam[]>([])
-  const [classes, setClasses] = useState<{ id: string; name: string }[]>([])
+  const directory = useExamsDirectory()
+  const {
+    allExams,
+    initialLoading,
+    refreshing,
+    filters,
+    updateFilter,
+    clearFilters,
+    activeFilterCount,
+    sortField,
+    sortDirection,
+    toggleSort,
+    stats,
+    availableTerms,
+    paginatedExams,
+    page,
+    setPage,
+    totalPages,
+    pageSize,
+    totalFiltered,
+    reload,
+  } = directory
+
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [form, setForm] = useState({ name: '', term: 'Spring', academicYear: '2025-2026', subjects: 'Math,Physics,English', maxScore: 100, passScore: 40 })
-  const [selectedExam, setSelectedExam] = useState('')
-  const [selectedClass, setSelectedClass] = useState('')
-  const [students, setStudents] = useState<Student[]>([])
-  const [marks, setMarks] = useState<Record<string, Record<string, number>>>({})
-  const [results, setResults] = useState<ExamResult[]>([])
+  const [activeTab, setActiveTab] = useState('exams')
+  const [viewMode, setViewMode] = useState<'table' | 'compact'>('table')
   const [viewResult, setViewResult] = useState<ExamResult | null>(null)
 
-  useEffect(() => {
-    fetchExams().then(setExams)
-    fetchClasses({ limit: 50 }).then((r) => setClasses(r.data.map((c) => ({ id: c.id, name: c.name }))))
-  }, [])
+  const marksEnabled = activeTab !== 'exams' || dialogOpen
+  const {
+    classes: markClasses,
+    selectedExam,
+    setSelectedExam,
+    selectedClass,
+    setSelectedClass,
+    students,
+    marks: markValues,
+    results,
+    selectedExamData,
+    passCount,
+    loadingRoster,
+    saving,
+    saveMarks,
+    handleMarkChange,
+    enterMarks,
+  } = useExamsMarks({ allExams, enabled: marksEnabled, t })
 
-  useEffect(() => {
-    if (!selectedClass) return
-    getClass(selectedClass).then((c) => {
-      setStudents(c.students)
-      if (selectedExam) {
-        fetchExamResults(selectedExam, selectedClass).then((res) => {
-          setResults(res)
-          const m: Record<string, Record<string, number>> = {}
-          res.forEach((r) => {
-            m[r.studentId] = {}
-            r.marks.forEach((mk) => { m[r.studentId][mk.subject] = mk.score })
-          })
-          setMarks(m)
-        })
-      }
-    })
-  }, [selectedExam, selectedClass])
-
-  const exam = exams.find((e) => e.id === selectedExam)
-
-  const handleCreateExam = async () => {
+  const handleCreateExam = useCallback(async (values: ExamFormValues) => {
     await createExam({
-      name: form.name, term: form.term, academicYear: form.academicYear,
-      classIds: classes.map((c) => c.id),
-      subjects: form.subjects.split(',').map((s) => s.trim()),
-      maxScore: form.maxScore, passScore: form.passScore,
+      name: values.name,
+      term: values.term,
+      academicYear: values.academicYear,
+      classIds: values.classIds,
+      subjects: values.subjects.split(',').map((s) => s.trim()).filter(Boolean),
+      maxScore: values.maxScore,
+      passScore: values.passScore,
     })
-    toast.success('Exam created')
-    setDialogOpen(false)
-    fetchExams().then(setExams)
-  }
+    toast.success(t('exams.created'))
+    await reload()
+  }, [reload, t])
 
-  const saveMarks = async () => {
-    if (!exam || !selectedClass) return
-    const payload = students.map((s) => ({
-      studentId: s.id,
-      marks: exam.subjects.map((sub) => ({
-        subject: sub,
-        score: marks[s.id]?.[sub] ?? 0,
-        maxScore: exam.maxScore,
-      })) as SubjectMark[],
-    }))
-    const saved = await saveExamResults(selectedExam, selectedClass, payload)
-    setResults(saved)
-    toast.success('Marks saved')
-  }
+  const handleEnterMarks = useCallback((exam: Exam) => {
+    enterMarks(exam)
+    setActiveTab('marks')
+  }, [enterMarks])
+
+  const handleSaveMarks = useCallback(async () => {
+    const saved = await saveMarks()
+    if (saved) setActiveTab('results')
+  }, [saveMarks])
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title={t('exams.title')}
-        description={t('exams.description')}
-        actions={
-          <Button onClick={() => setDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            {t('common.add')} {t('nav.examsResults')}
-          </Button>
-        }
-      />
-      <Tabs defaultValue="exams">
-        <TabsList>
-          <TabsTrigger value="exams">Exams</TabsTrigger>
-          <TabsTrigger value="marks">Enter Marks</TabsTrigger>
-          <TabsTrigger value="results">Results</TabsTrigger>
-        </TabsList>
-        <TabsContent value="exams">
-          <BentoGrid>
-            {exams.map((e) => (
-              <BentoCard key={e.id} colSpan={2}>
-                <h3 className="font-bold">{e.name}</h3>
-                <p className="text-sm text-muted-foreground">{e.term} · {e.academicYear}</p>
-                <p className="text-xs mt-2">{e.subjects.join(', ')}</p>
-              </BentoCard>
-            ))}
-          </BentoGrid>
-        </TabsContent>
-        <TabsContent value="marks">
-          <GlassPanel>
-            <div className="flex gap-3 mb-4 flex-wrap">
-              <Select value={selectedExam} onValueChange={setSelectedExam}>
-                <SelectTrigger className="w-48"><SelectValue placeholder="Exam" /></SelectTrigger>
-                <SelectContent>{exams.map((e) => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}</SelectContent>
-              </Select>
-              <Select value={selectedClass} onValueChange={setSelectedClass}>
-                <SelectTrigger className="w-48"><SelectValue placeholder="Class" /></SelectTrigger>
-                <SelectContent>{classes.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
-              </Select>
-              <Button onClick={saveMarks} disabled={!selectedExam || !selectedClass}>Save Marks</Button>
-            </div>
-            {exam && students.length > 0 && (
-              <div className="overflow-x-auto rounded-xl border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Student</TableHead>
-                      {exam.subjects.map((s) => <TableHead key={s}>{s}</TableHead>)}
-                      <TableHead>Total</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {students.map((s) => {
-                      const total = exam.subjects.reduce((sum, sub) => sum + (marks[s.id]?.[sub] ?? 0), 0)
-                      return (
-                        <TableRow key={s.id}>
-                          <TableCell>{s.firstName} {s.lastName}</TableCell>
-                          {exam.subjects.map((sub) => (
-                            <TableCell key={sub}>
-                              <Input type="number" min={0} max={exam.maxScore} className="w-16 h-8"
-                                value={marks[s.id]?.[sub] ?? ''}
-                                onChange={(e) => setMarks({ ...marks, [s.id]: { ...marks[s.id], [sub]: Number(e.target.value) } })} />
-                            </TableCell>
-                          ))}
-                          <TableCell className="font-semibold">{total}</TableCell>
-                        </TableRow>
-                      )
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
+    <div className="dashboard-shell exams-page space-y-4">
+      <BentoGrid>
+        <BentoCard colSpan={12} delay={0} className="!p-0">
+          <ExamsHero
+            total={stats.total}
+            subjects={stats.subjects}
+            onRefresh={reload}
+            onCreate={() => setDialogOpen(true)}
+            refreshing={refreshing}
+          />
+        </BentoCard>
+
+        {initialLoading ? (
+          <ExamsStatSkeleton />
+        ) : (
+          <>
+            <BentoCard colSpan={3} accent="exams" delay={60}>
+              <AnimatedStat
+                title={t('exams.totalExams')}
+                value={stats.total}
+                icon={FileText}
+                accent="exams"
+                compact
+              />
+            </BentoCard>
+            <BentoCard colSpan={3} accent="classes" delay={120}>
+              <AnimatedStat
+                title={t('exams.totalSubjects')}
+                value={stats.subjects}
+                icon={BookOpen}
+                accent="classes"
+                compact
+              />
+            </BentoCard>
+            <BentoCard colSpan={3} accent="teachers" delay={180}>
+              <AnimatedStat
+                title={t('exams.linkedClasses')}
+                value={stats.classes}
+                icon={Users}
+                accent="teachers"
+                compact
+              />
+            </BentoCard>
+            <BentoCard colSpan={3} accent="attendance" delay={240}>
+              <AnimatedStat
+                title={t('exams.passedStudents')}
+                value={passCount}
+                icon={Award}
+                accent="attendance"
+                compact
+              />
+            </BentoCard>
+          </>
+        )}
+
+        <BentoCard colSpan={12} delay={300}>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="exams-tabs">
+            <TabsList className="exams-tabs-list mb-4">
+              <TabsTrigger value="exams" className="exams-tab-trigger">
+                {t('exams.tabExams')}
+              </TabsTrigger>
+              <TabsTrigger value="marks" className="exams-tab-trigger">
+                {t('exams.tabMarks')}
+              </TabsTrigger>
+              <TabsTrigger value="results" className="exams-tab-trigger">
+                {t('exams.tabResults')}
+              </TabsTrigger>
+            </TabsList>
+
+            {activeTab === 'exams' && (
+              <>
+                <ExamsFilters
+                  filters={filters}
+                  onFilterChange={updateFilter}
+                  onClear={clearFilters}
+                  activeFilterCount={activeFilterCount}
+                  availableTerms={availableTerms}
+                  totalFiltered={totalFiltered}
+                  total={stats.total}
+                  viewMode={viewMode}
+                  onViewModeChange={setViewMode}
+                />
+                <div className="mt-4">
+                  <ExamsDataTable
+                    exams={paginatedExams}
+                    loading={initialLoading}
+                    refreshing={refreshing}
+                    sortField={sortField}
+                    sortDirection={sortDirection}
+                    onSort={toggleSort}
+                    onEnterMarks={handleEnterMarks}
+                    page={page}
+                    totalPages={totalPages}
+                    totalFiltered={totalFiltered}
+                    pageSize={pageSize}
+                    onPageChange={setPage}
+                    viewMode={viewMode}
+                  />
+                </div>
+              </>
             )}
-          </GlassPanel>
-        </TabsContent>
-        <TabsContent value="results">
-          <GlassPanel>
-            <Table>
-              <TableHeader>
-                <TableRow><TableHead>Student</TableHead><TableHead>Total</TableHead><TableHead>%</TableHead><TableHead>Status</TableHead><TableHead /></TableRow>
-              </TableHeader>
-              <TableBody>
-                {results.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell>{r.studentName}</TableCell>
-                    <TableCell>{r.total}/{r.maxTotal}</TableCell>
-                    <TableCell>{r.percentage}%</TableCell>
-                    <TableCell><StatusBadge status={r.status} /></TableCell>
-                    <TableCell><Button size="sm" variant="outline" onClick={() => setViewResult(r)}>View</Button></TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </GlassPanel>
-        </TabsContent>
-      </Tabs>
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>New Exam</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <div><Label>Name</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
-            <div><Label>Subjects (comma-separated)</Label><Input value={form.subjects} onChange={(e) => setForm({ ...form, subjects: e.target.value })} /></div>
-            <Button className="w-full" onClick={handleCreateExam}>Create</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-      <Dialog open={!!viewResult} onOpenChange={() => setViewResult(null)}>
-        <DialogContent className="print:block">
-          {viewResult && (
-            <div className="space-y-4">
-              <h3 className="font-bold text-lg">Result — {viewResult.studentName}</h3>
-              <Table>
-                <TableHeader><TableRow><TableHead>Subject</TableHead><TableHead>Score</TableHead></TableRow></TableHeader>
-                <TableBody>
-                  {viewResult.marks.map((m) => (
-                    <TableRow key={m.subject}><TableCell>{m.subject}</TableCell><TableCell>{m.score}/{m.maxScore}</TableCell></TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              <p className="font-semibold">Total: {viewResult.total}/{viewResult.maxTotal} ({viewResult.percentage}%) — <StatusBadge status={viewResult.status} /></p>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+
+            {activeTab === 'marks' && (
+              <ExamsMarksPanel
+                exams={allExams}
+                classes={markClasses}
+                selectedExam={selectedExam}
+                selectedClass={selectedClass}
+                students={students}
+                marks={markValues}
+                exam={selectedExamData}
+                loading={initialLoading || loadingRoster}
+                saving={saving}
+                onExamChange={setSelectedExam}
+                onClassChange={setSelectedClass}
+                onMarkChange={handleMarkChange}
+                onSave={handleSaveMarks}
+              />
+            )}
+
+            {activeTab === 'results' && (
+              <ExamsResultsPanel
+                results={results}
+                loading={loadingRoster}
+                onView={setViewResult}
+              />
+            )}
+          </Tabs>
+        </BentoCard>
+      </BentoGrid>
+
+      {dialogOpen && (
+        <ExamsCreateDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          classes={markClasses}
+          onSubmit={handleCreateExam}
+        />
+      )}
+
+      {viewResult && (
+        <ExamsResultDialog result={viewResult} onClose={() => setViewResult(null)} />
+      )}
     </div>
   )
 }

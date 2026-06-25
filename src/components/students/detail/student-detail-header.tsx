@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useTranslation } from '@/i18n/use-translation'
 import { getStudentDisplayName, getStudentDisplayInitials } from '@/i18n/student-display'
+import { mainCardShadow } from '@/utils/theme'
+import { cn } from '@/lib/utils'
 
 interface StudentDetailHeaderProps {
   student: Student
@@ -45,8 +47,8 @@ export function StudentDetailHeader({
     : getStudentDisplayInitials(student, locale)
 
   return (
-    <div className="student-detail-header relative overflow-hidden rounded-2xl border p-4 sm:p-5">
-      <div className="student-detail-header-mesh pointer-events-none" aria-hidden />
+    <div className={cn('student-detail-header relative rounded-2xl border p-4 sm:p-5', mainCardShadow)}>
+      <div className="student-detail-header-mesh pointer-events-none overflow-hidden rounded-[inherit]" aria-hidden />
       <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-4">
           <Button

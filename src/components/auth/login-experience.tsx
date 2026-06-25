@@ -7,35 +7,38 @@ import { LanguageSwitcher } from '@/components/language-switcher'
 import { ModeToggle } from '@/components/mode-toggle'
 import { LayoutGrid } from 'lucide-react'
 import { useTranslation } from '@/i18n/use-translation'
-
-const LoginLinesBackground = dynamic(
-  () =>
-    import('./login-lines-background').then((mod) => ({
-      default: mod.LoginLinesBackground,
-    })),
-  { ssr: false }
-)
+import { useDeferredMount } from '@/hooks/use-deferred-mount'
+import { useMediaQuery } from '@/hooks/use-media-query'
 
 const Login3DScene = dynamic(
   () =>
     import('./login-3d-scene').then((mod) => ({
       default: mod.Login3DScene,
     })),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="login-saas-3d hidden min-h-[480px] lg:block" aria-hidden />
-    ),
-  }
+  { ssr: false }
 )
+
+function DeferredLogin3D() {
+  const isDesktop = useMediaQuery('(min-width: 1024px)')
+  const ready = useDeferredMount({ idle: true, enabled: isDesktop })
+
+  if (!isDesktop) return null
+  if (!ready) {
+    return <div className="login-saas-3d-placeholder hidden min-h-[480px] lg:block" aria-hidden />
+  }
+
+  return (
+    <div className="login-panel-arrive-left w-full">
+      <Login3DScene />
+    </div>
+  )
+}
 
 export function LoginExperience() {
   const { t } = useTranslation()
 
   return (
-    <div className="login-page-shell">
-      <LoginLinesBackground className="fixed inset-0 -z-10" />
-
+    <>
       <header className="relative z-20 flex items-center justify-between px-6 py-5">
         <div className="flex items-center gap-2.5">
           <div className="login-header-brand-icon">
@@ -53,9 +56,9 @@ export function LoginExperience() {
       </header>
 
       <div className="relative z-10 mx-auto grid min-h-[calc(100vh-118px)] max-w-7xl items-center gap-8 px-4 pb-8 sm:px-8 lg:grid-cols-2">
-        <Login3DScene />
+        <DeferredLogin3D />
 
-        <div className="login-card-enter flex w-full justify-center">
+        <div className="login-panel-arrive-right flex w-full justify-center">
           <LoginCard>
             <LoginForm variant="immersive" />
           </LoginCard>
@@ -65,6 +68,6 @@ export function LoginExperience() {
       <footer className="relative z-10 pb-6 text-center text-xs login-footer-text">
         © {new Date().getFullYear()} {t('common.brandName')} · {t('loginShowcase.footer')}
       </footer>
-    </div>
+    </>
   )
 }

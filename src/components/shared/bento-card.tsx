@@ -71,10 +71,9 @@ export function BentoCard({
           : undefined
       }
       className={cn(
-        'bento-card-premium group relative overflow-hidden rounded-2xl',
+        'bento-card-premium group relative rounded-2xl',
         'transition-all duration-300 ease-out',
-        'hover:-translate-y-1 hover:shadow-[0_20px_48px_-12px_rgba(15,23,42,0.18)]',
-        'dark:hover:shadow-[0_20px_48px_-12px_rgba(0,0,0,0.55)]',
+        'hover:-translate-y-1',
         'dashboard-bento-enter',
         colSpanMap[colSpan],
         rowSpanMap[rowSpan],

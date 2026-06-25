@@ -35,6 +35,7 @@ const statusLabelKeys: Partial<Record<StatusVariant, string>> = {
   active: 'status.active',
   inactive: 'status.inactive',
   graduated: 'status.graduated',
+  archived: 'status.archived',
   present: 'dashboard.present',
   absent: 'dashboard.absent',
 }

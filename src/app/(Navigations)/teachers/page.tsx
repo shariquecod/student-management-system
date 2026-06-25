@@ -1,175 +1,168 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
-import { useForm } from 'react-hook-form'
-import { z } from 'zod'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { PageHeader, GlassPanel, StatusBadge } from '@/components/shared'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { Textarea } from '@/components/ui/textarea'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { Plus, MoreHorizontal, Search } from 'lucide-react'
-import { fetchTeachers, createTeacher, updateTeacher, deleteTeacher } from '@/services/school-api'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { Users, UserCheck, UserX, Archive } from 'lucide-react'
+import { BentoGrid, BentoCard, AnimatedStat } from '@/components/shared'
+import {
+  TeachersHero,
+  TeachersFilters,
+  TeachersDataTable,
+  TeachersArchiveDialog,
+  TeachersStatSkeleton,
+} from '@/components/teachers'
+import { useTeachersDirectory } from '@/hooks/use-teachers-directory'
+import { deleteTeacher } from '@/services/school-api'
 import type { Teacher } from '@/types'
 import { toast } from 'sonner'
 import { useTranslation } from '@/i18n/use-translation'
 
-const schema = z.object({
-  firstName: z.string().min(1), lastName: z.string().min(1),
-  employeeId: z.string().min(1), email: z.string().email(), phone: z.string().min(1),
-  department: z.string().min(1), subjects: z.string().min(1),
-  joiningDate: z.string().min(1), status: z.enum(['active', 'inactive', 'archived']),
-  notes: z.string().optional(),
-})
-
-type FormValues = z.infer<typeof schema>
-
 export default function TeachersPage() {
   const { t } = useTranslation()
-  const [teachers, setTeachers] = useState<Teacher[]>([])
-  const [total, setTotal] = useState(0)
-  const [page, setPage] = useState(1)
-  const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [editing, setEditing] = useState<Teacher | null>(null)
-  const [loading, setLoading] = useState(true)
+  const router = useRouter()
+  const {
+    initialLoading,
+    refreshing,
+    filters,
+    updateFilter,
+    clearFilters,
+    activeFilterCount,
+    sortField,
+    sortDirection,
+    toggleSort,
+    stats,
+    paginatedTeachers,
+    page,
+    setPage,
+    totalPages,
+    pageSize,
+    totalFiltered,
+    departments,
+    reload,
+  } = useTeachersDirectory()
 
-  const form = useForm<FormValues>({
-    resolver: zodResolver(schema),
-    defaultValues: { firstName: '', lastName: '', employeeId: '', email: '', phone: '', department: '', subjects: '', joiningDate: '', status: 'active', notes: '' },
-  })
+  const [archiveTarget, setArchiveTarget] = useState<Teacher | null>(null)
+  const [archiving, setArchiving] = useState(false)
+  const [viewMode, setViewMode] = useState<'table' | 'compact'>('table')
 
-  const load = useCallback(async () => {
-    setLoading(true)
-    try {
-      const res = await fetchTeachers({ search: search || undefined, status: statusFilter !== 'all' ? statusFilter : undefined, page, limit: 10 })
-      setTeachers(res.data)
-      setTotal(res.meta.total)
-    } catch { toast.error('Failed to load teachers') }
-    finally { setLoading(false) }
-  }, [search, statusFilter, page])
-
-  useEffect(() => { const t = setTimeout(load, 300); return () => clearTimeout(t) }, [load])
-
-  const openCreate = () => {
-    setEditing(null)
-    form.reset({ firstName: '', lastName: '', employeeId: '', email: '', phone: '', department: '', subjects: '', joiningDate: '', status: 'active', notes: '' })
-    setDialogOpen(true)
+  const openView = (teacher: Teacher) => {
+    router.push(`/teachers/${teacher.id}`)
   }
 
-  const openEdit = (t: Teacher) => {
-    setEditing(t)
-    form.reset({ firstName: t.firstName, lastName: t.lastName, employeeId: t.employeeId, email: t.email, phone: t.phone, department: t.department, subjects: t.subjects.join(', '), joiningDate: t.joiningDate, status: t.status, notes: t.notes ?? '' })
-    setDialogOpen(true)
-  }
-
-  const onSubmit = async (values: FormValues) => {
-    const payload = { ...values, subjects: values.subjects.split(',').map((s) => s.trim()).filter(Boolean), assignedClassIds: editing?.assignedClassIds ?? [] }
+  const handleConfirmArchive = async () => {
+    if (!archiveTarget) return
+    setArchiving(true)
     try {
-      if (editing) { await updateTeacher(editing.id, payload); toast.success('Teacher updated') }
-      else { await createTeacher(payload); toast.success('Teacher created') }
-      setDialogOpen(false); load()
-    } catch { toast.error('Failed to save') }
+      await deleteTeacher(archiveTarget.id)
+      toast.success(t('teachers.archived'))
+      setArchiveTarget(null)
+      reload()
+    } catch {
+      toast.error(t('teachers.archiveFailedShort'))
+      throw new Error('archive failed')
+    } finally {
+      setArchiving(false)
+    }
   }
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title={t('teachers.title')}
-        description={t('teachers.description')}
-        actions={
-          <Button onClick={openCreate}>
-            <Plus className="h-4 w-4 mr-2" />
-            {t('teachers.addTeacher')}
-          </Button>
-        }
+    <div className="dashboard-shell space-y-4">
+      <BentoGrid>
+        <BentoCard colSpan={12} delay={0} className="!p-0">
+          <TeachersHero
+            total={stats.total}
+            active={stats.active}
+            onRefresh={reload}
+            refreshing={refreshing}
+          />
+        </BentoCard>
+
+        {initialLoading ? (
+          <TeachersStatSkeleton />
+        ) : (
+          <>
+            <BentoCard colSpan={3} accent="teachers" delay={60}>
+              <AnimatedStat
+                title={t('teachers.totalTeachers')}
+                value={stats.total}
+                icon={Users}
+                accent="teachers"
+                trend={4}
+                compact
+              />
+            </BentoCard>
+            <BentoCard colSpan={3} accent="classes" delay={120}>
+              <AnimatedStat
+                title={t('teachers.active')}
+                value={stats.active}
+                icon={UserCheck}
+                accent="classes"
+                compact
+              />
+            </BentoCard>
+            <BentoCard colSpan={3} accent="fees" delay={180}>
+              <AnimatedStat
+                title={t('teachers.inactive')}
+                value={stats.inactive}
+                icon={UserX}
+                accent="fees"
+                compact
+              />
+            </BentoCard>
+            <BentoCard colSpan={3} accent="exams" delay={240}>
+              <AnimatedStat
+                title={t('teachers.archived')}
+                value={stats.archived}
+                icon={Archive}
+                accent="exams"
+                compact
+              />
+            </BentoCard>
+          </>
+        )}
+
+        <BentoCard colSpan={12} delay={300}>
+          <TeachersFilters
+            filters={filters}
+            onFilterChange={updateFilter}
+            onClear={clearFilters}
+            activeFilterCount={activeFilterCount}
+            departments={departments}
+            totalFiltered={totalFiltered}
+            total={stats.total}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+          />
+          <div className="mt-4">
+            <TeachersDataTable
+              teachers={paginatedTeachers}
+              loading={initialLoading}
+              refreshing={refreshing}
+              sortField={sortField}
+              sortDirection={sortDirection}
+              onSort={toggleSort}
+              onView={openView}
+              onArchive={setArchiveTarget}
+              page={page}
+              totalPages={totalPages}
+              totalFiltered={totalFiltered}
+              pageSize={pageSize}
+              onPageChange={setPage}
+              viewMode={viewMode}
+            />
+          </div>
+        </BentoCard>
+      </BentoGrid>
+
+      <TeachersArchiveDialog
+        teacher={archiveTarget}
+        open={!!archiveTarget}
+        onOpenChange={(open) => {
+          if (!open) setArchiveTarget(null)
+        }}
+        onConfirm={handleConfirmArchive}
+        loading={archiving}
       />
-      <GlassPanel>
-        <div className="flex flex-col sm:flex-row gap-3 mb-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search..." className="pl-9" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1) }} />
-          </div>
-          <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1) }}>
-            <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="inactive">Inactive</SelectItem>
-              <SelectItem value="archived">Archived</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="rounded-xl border overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Employee ID</TableHead>
-                <TableHead className="hidden md:table-cell">Department</TableHead>
-                <TableHead className="hidden lg:table-cell">Email</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="w-12" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? <TableRow><TableCell colSpan={6} className="text-center py-8">Loading...</TableCell></TableRow>
-              : teachers.map((t) => (
-                <TableRow key={t.id}>
-                  <TableCell className="font-medium">{t.firstName} {t.lastName}</TableCell>
-                  <TableCell>{t.employeeId}</TableCell>
-                  <TableCell className="hidden md:table-cell">{t.department}</TableCell>
-                  <TableCell className="hidden lg:table-cell">{t.email}</TableCell>
-                  <TableCell><StatusBadge status={t.status === 'archived' ? 'archived' : t.status} /></TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => openEdit(t)}>Edit</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive" onClick={async () => { await deleteTeacher(t.id); toast.success('Archived'); load() }}>Archive</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-        <div className="flex justify-between mt-4 text-sm text-muted-foreground">
-          <span>{total} teachers</span>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Prev</Button>
-            <Button variant="outline" size="sm" disabled={page * 10 >= total} onClick={() => setPage((p) => p + 1)}>Next</Button>
-          </div>
-        </div>
-      </GlassPanel>
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>{editing ? 'Edit Teacher' : 'Add Teacher'}</DialogTitle></DialogHeader>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <FormField control={form.control} name="firstName" render={({ field }) => (<FormItem><FormLabel>First</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="lastName" render={({ field }) => (<FormItem><FormLabel>Last</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-              </div>
-              <FormField control={form.control} name="employeeId" render={({ field }) => (<FormItem><FormLabel>Employee ID</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="phone" render={({ field }) => (<FormItem><FormLabel>Phone</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="department" render={({ field }) => (<FormItem><FormLabel>Department</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="subjects" render={({ field }) => (<FormItem><FormLabel>Subjects (comma-separated)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="joiningDate" render={({ field }) => (<FormItem><FormLabel>Joining Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="notes" render={({ field }) => (<FormItem><FormLabel>Notes</FormLabel><FormControl><Textarea {...field} /></FormControl></FormItem>)} />
-              <Button type="submit" className="w-full">{editing ? 'Update' : 'Create'}</Button>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

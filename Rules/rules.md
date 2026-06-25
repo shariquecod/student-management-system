@@ -5,3 +5,7 @@
 
 
 2. make every page light-weight 
+
+3. check error using npx tsc - At last - till all errors resolved
+
+4. First check all  comnponent and use it .

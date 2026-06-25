@@ -1,12 +1,12 @@
 import '@/styles/globals.css'
 import { Metadata, Viewport } from 'next'
 import { Poppins, Noto_Nastaliq_Urdu } from 'next/font/google'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 import { ReduxProvider } from '@/redux/provider'
 import { ThemeProvider, OfflineOverlay } from '@/components'
 import { LocaleProvider } from '@/components/locale-provider'
 import { Toaster } from 'sonner'
 import { ToastProvider } from '@/context/ToastContext'
-import Script from 'next/script'
 import { AuthRedirect } from '@/components/auth-redirect'
 
 const poppins = Poppins({
@@ -52,6 +52,7 @@ export default function RootLayout({
                 <OfflineOverlay />
                 {children}
                 <Toaster position="top-center" />
+                <SpeedInsights />
               </ToastProvider>
             </LocaleProvider>
           </ReduxProvider>

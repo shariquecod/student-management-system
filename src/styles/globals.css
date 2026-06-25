@@ -52,6 +52,10 @@
     --metric-fees: 38 92% 50%;
     --metric-attendance: 173 80% 40%;
     --metric-exams: 350 89% 60%;
+    --modal-overlay-scrim: 0 0% 100%;
+    --modal-overlay-scrim-opacity: 0.68;
+    --modal-overlay-blur: 12px;
+    --modal-overlay-saturate: 1.15;
   }
 
   .dark {
@@ -91,6 +95,10 @@
     --sidebar-surface: 0 0% 13%;
     --glass: 0 0% 9% / 0.94;
     --glass-border: 0 0% 24%;
+    --modal-overlay-scrim: 0 0% 0%;
+    --modal-overlay-scrim-opacity: 0.68;
+    --modal-overlay-blur: 12px;
+    --modal-overlay-saturate: 1.15;
   }
 
   * {
@@ -130,19 +138,9 @@
 /* Custom component styles */
 @layer components {
   .glass-panel {
-    @apply backdrop-blur-xl border shadow-[0_8px_32px_rgba(15,23,42,0.08)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.35)];
+    @apply backdrop-blur-xl border;
     background: hsl(var(--glass));
     border-color: hsl(var(--glass-border));
-  }
-
-  /* Premium dialog — glass theme */
-  .dialog-overlay {
-    background: hsl(var(--background) / 0.55);
-    backdrop-filter: blur(3 px) saturate(1.15);
-  }
-
-  .dark .dialog-overlay {
-    background: hsl(0 0% 0% / 0.68);
   }
 
   .dialog-content {
@@ -249,6 +247,12 @@
     border-color: hsl(var(--metric-students) / 0.35);
     background: hsl(var(--metric-students) / 0.12);
     color: hsl(var(--metric-students));
+  }
+
+  .dialog-icon-badge-teachers {
+    border-color: hsl(var(--metric-teachers) / 0.35);
+    background: hsl(var(--metric-teachers) / 0.12);
+    color: hsl(var(--metric-teachers));
   }
 
   /* Premium buttons — glass theme */
@@ -459,21 +463,19 @@
       hsl(var(--glass-border) / 0.2) 100%
     );
     padding: 1px;
+    overflow: visible;
+  }
+
+  :root:not(.dark) .bento-card-premium,
+  :root:not(.dark) .main-card-shadow {
+    box-shadow: 0 8px 32px rgba(15, 23, 42, 0.08);
   }
 
   .bento-card-premium-inner {
     @apply h-full rounded-[calc(1rem-1px)] backdrop-blur-xl;
     background: hsl(var(--glass));
     border: 1px solid hsl(var(--glass-border));
-    box-shadow:
-      0 4px 24px rgba(15, 23, 42, 0.06),
-      inset 0 1px 0 hsl(var(--glass-border));
-  }
-
-  .dark .bento-card-premium-inner {
-    box-shadow:
-      0 4px 32px rgba(0, 0, 0, 0.35),
-      inset 0 1px 0 hsl(var(--glass-border));
+    overflow: hidden;
   }
 
   .bento-card-accent-orb {
@@ -894,20 +896,1538 @@
     background: hsl(var(--glass) / 0.5);
     padding: 1rem;
     transition: all 0.25s ease;
-    box-shadow: inset 0 1px 0 hsl(var(--glass-border));
   }
 
   .dark .students-compact-card {
     border-color: hsl(var(--glass-border));
     background: hsl(var(--glass) / 0.4);
-    box-shadow: inset 0 1px 0 hsl(var(--glass-border) / 0.6);
   }
 
   .students-compact-card:hover {
     border-color: hsl(var(--metric-students) / 0.35);
     background: hsl(var(--metric-students) / 0.06);
     transform: translateY(-2px);
+  }
+
+  .dark .students-compact-card:hover {
     box-shadow: 0 12px 28px -12px hsl(var(--metric-students) / 0.25);
+  }
+
+  /* Classes page — bento + advanced table */
+  .classes-hero {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--metric-classes) / 0.08) 0%,
+      hsl(var(--glass) / 0.4) 45%,
+      hsl(var(--metric-teachers) / 0.06) 100%
+    );
+  }
+
+  .dark .classes-hero {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--metric-classes) / 0.14) 0%,
+      hsl(0 0% 11%) 50%,
+      hsl(var(--metric-students) / 0.08) 100%
+    );
+  }
+
+  .classes-hero-mesh {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 100% 0%, hsl(var(--metric-classes) / 0.2), transparent 55%),
+      radial-gradient(ellipse 60% 50% at 0% 100%, hsl(var(--metric-teachers) / 0.12), transparent 50%);
+    pointer-events: none;
+  }
+
+  .classes-hero-badge {
+    border: 1px solid hsl(var(--metric-classes) / 0.25);
+    background: hsl(var(--metric-classes) / 0.1);
+    color: hsl(var(--metric-classes));
+  }
+
+  .classes-hero-btn {
+    border-color: hsl(var(--glass-border));
+    background: hsl(var(--glass) / 0.5);
+    backdrop-filter: blur(8px);
+  }
+
+  .classes-hero-btn:hover {
+    border-color: hsl(var(--metric-classes) / 0.35);
+    background: hsl(var(--metric-classes) / 0.08);
+  }
+
+  .classes-hero-primary {
+    background: hsl(var(--metric-classes));
+    color: hsl(0 0% 100%);
+  }
+
+  .classes-hero-primary:hover {
+    background: hsl(var(--metric-classes) / 0.9);
+  }
+
+  .classes-avatar {
+    background: linear-gradient(135deg, hsl(var(--metric-classes) / 0.2), hsl(var(--metric-teachers) / 0.15));
+    color: hsl(var(--metric-classes));
+    border: 1px solid hsl(var(--metric-classes) / 0.2);
+  }
+
+  .dark .classes-avatar {
+    color: hsl(var(--foreground));
+  }
+
+  .classes-search-input,
+  .classes-filter-select {
+    border-color: hsl(var(--glass-border));
+    background: hsl(var(--glass) / 0.45);
+    backdrop-filter: blur(8px);
+  }
+
+  .classes-search-input:focus-visible,
+  .classes-filter-select:focus-visible {
+    border-color: hsl(var(--metric-classes) / 0.5);
+    box-shadow: 0 0 0 2px hsl(var(--metric-classes) / 0.15);
+  }
+
+  .classes-view-toggle {
+    border-color: hsl(var(--glass-border));
+    background: hsl(var(--muted) / 0.25);
+  }
+
+  .classes-view-toggle-btn {
+    color: hsl(var(--muted-foreground));
+  }
+
+  .classes-view-toggle-btn-active {
+    background: hsl(var(--metric-classes) / 0.15);
+    color: hsl(var(--metric-classes));
+  }
+
+  .classes-count-pill {
+    border-radius: 9999px;
+    border: 1px solid hsl(var(--metric-classes) / 0.25);
+    background: hsl(var(--metric-classes) / 0.1);
+    color: hsl(var(--metric-classes));
+    padding: 0.125rem 0.5rem;
+  }
+
+  .classes-accent-pill {
+    border-radius: 9999px;
+    border: 1px solid hsl(var(--metric-classes) / 0.25);
+    background: hsl(var(--metric-classes) / 0.1);
+    color: hsl(var(--metric-classes));
+    padding: 0.125rem 0.625rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .classes-dialog-icon-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.75rem;
+    background: hsl(var(--metric-classes) / 0.12);
+    color: hsl(var(--metric-classes));
+  }
+
+  .classes-form-input {
+    border-color: hsl(var(--glass-border));
+    background: hsl(var(--muted) / 0.25);
+  }
+
+  .classes-form-input:focus-visible {
+    border-color: hsl(var(--metric-classes) / 0.5);
+    box-shadow: 0 0 0 2px hsl(var(--metric-classes) / 0.12);
+  }
+
+  .classes-page-btn-active {
+    background: hsl(var(--metric-classes));
+    color: hsl(0 0% 100%);
+  }
+
+  .classes-page .students-table-row:hover,
+  .classes-page .students-table-row:focus-visible {
+    background: hsl(var(--metric-classes) / 0.06);
+    box-shadow: inset 3px 0 0 hsl(var(--metric-classes));
+    outline: none;
+  }
+
+  .dark .classes-page .students-table-row:hover,
+  .dark .classes-page .students-table-row:focus-visible {
+    background: hsl(var(--metric-classes) / 0.08);
+  }
+
+  .classes-page .students-compact-card:hover {
+    border-color: hsl(var(--metric-classes) / 0.35);
+    background: hsl(var(--metric-classes) / 0.06);
+  }
+
+  .dark .classes-page .students-compact-card:hover {
+    box-shadow: 0 12px 28px -12px hsl(var(--metric-classes) / 0.25);
+  }
+
+  .classes-page .students-table-sort-btn:hover {
+    color: hsl(var(--foreground));
+  }
+
+  .classes-page .students-table-action:hover {
+    color: hsl(var(--metric-classes));
+    background: hsl(var(--metric-classes) / 0.1);
+  }
+
+  .class-detail-header {
+    border-color: hsl(var(--glass-border));
+    background: linear-gradient(
+      135deg,
+      hsl(var(--metric-classes) / 0.08) 0%,
+      hsl(var(--glass) / 0.4) 50%,
+      hsl(var(--glass) / 0.2) 100%
+    );
+  }
+
+  .dark .class-detail-header {
+    background: linear-gradient(135deg, hsl(var(--metric-classes) / 0.12) 0%, hsl(0 0% 11%) 60%);
+  }
+
+  .class-detail-header-mesh {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 70% 60% at 90% 10%, hsl(var(--metric-classes) / 0.18), transparent 55%),
+      radial-gradient(ellipse 50% 40% at 10% 90%, hsl(var(--metric-teachers) / 0.1), transparent 50%);
+    pointer-events: none;
+  }
+
+  .class-detail-tabs {
+    border: 1px solid hsl(var(--glass-border));
+    border-radius: 0.75rem;
+    background: hsl(var(--muted) / 0.2);
+    backdrop-filter: blur(8px);
+  }
+
+  .dark .class-detail-tabs {
+    background: hsl(var(--muted) / 0.12);
+  }
+
+  .class-detail-tabs-list {
+    min-height: 2.75rem;
+  }
+
+  .class-detail-tab-trigger {
+    color: hsl(var(--muted-foreground));
+  }
+
+  .class-detail-tab-trigger:hover {
+    color: hsl(var(--foreground));
+    background: hsl(var(--muted) / 0.35);
+  }
+
+  .class-detail-tab-trigger-active {
+    background: hsl(var(--metric-classes) / 0.15);
+    color: hsl(var(--metric-classes));
+    box-shadow: inset 0 0 0 1px hsl(var(--metric-classes) / 0.2);
+  }
+
+  .dark .class-detail-tab-trigger-active {
+    background: hsl(var(--metric-classes) / 0.2);
+  }
+
+  .class-detail-tab-panel {
+    animation: fadeSlideIn 0.35s ease forwards;
+  }
+
+  /* Teachers page — bento + advanced table */
+  .teachers-hero,
+  .teachers-create-hero {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--metric-teachers) / 0.08) 0%,
+      hsl(var(--glass) / 0.4) 45%,
+      hsl(var(--metric-classes) / 0.06) 100%
+    );
+  }
+
+  .dark .teachers-hero,
+  .dark .teachers-create-hero {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--metric-teachers) / 0.14) 0%,
+      hsl(0 0% 11%) 50%,
+      hsl(var(--metric-students) / 0.08) 100%
+    );
+  }
+
+  .teachers-hero-mesh {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 100% 0%, hsl(var(--metric-teachers) / 0.2), transparent 55%),
+      radial-gradient(ellipse 60% 50% at 0% 100%, hsl(var(--metric-classes) / 0.12), transparent 50%);
+    pointer-events: none;
+  }
+
+  .teachers-hero-badge {
+    border: 1px solid hsl(var(--metric-teachers) / 0.25);
+    background: hsl(var(--metric-teachers) / 0.1);
+    color: hsl(var(--metric-teachers));
+  }
+
+  .teachers-hero-btn {
+    border-color: hsl(var(--glass-border));
+    background: hsl(var(--glass) / 0.5);
+    backdrop-filter: blur(8px);
+  }
+
+  .teachers-hero-btn:hover {
+    border-color: hsl(var(--metric-teachers) / 0.35);
+    background: hsl(var(--metric-teachers) / 0.08);
+  }
+
+  .teachers-hero-primary {
+    background: hsl(var(--metric-teachers));
+    color: hsl(0 0% 100%);
+  }
+
+  .teachers-hero-primary:hover {
+    background: hsl(var(--metric-teachers) / 0.9);
+  }
+
+  .teachers-avatar {
+    background: linear-gradient(135deg, hsl(var(--metric-teachers) / 0.2), hsl(var(--metric-classes) / 0.15));
+    color: hsl(var(--metric-teachers));
+    border: 1px solid hsl(var(--metric-teachers) / 0.2);
+  }
+
+  .dark .teachers-avatar {
+    color: hsl(var(--foreground));
+  }
+
+  .teachers-search-input,
+  .teachers-filter-select,
+  .teachers-form-input {
+    border-color: hsl(var(--glass-border));
+    background: hsl(var(--glass) / 0.45);
+    backdrop-filter: blur(8px);
+  }
+
+  .teachers-search-input:focus-visible,
+  .teachers-filter-select:focus-visible,
+  .teachers-form-input:focus-visible {
+    border-color: hsl(var(--metric-teachers) / 0.5);
+    box-shadow: 0 0 0 2px hsl(var(--metric-teachers) / 0.15);
+  }
+
+  .teachers-filter-chip {
+    border: 1px solid hsl(var(--glass-border));
+    background: hsl(var(--muted) / 0.3);
+    color: hsl(var(--muted-foreground));
+  }
+
+  .teachers-filter-chip-teachers.teachers-filter-chip-active {
+    border-color: hsl(var(--metric-teachers) / 0.45);
+    background: hsl(var(--metric-teachers) / 0.12);
+    color: hsl(var(--metric-teachers));
+  }
+
+  .teachers-filter-chip-classes.teachers-filter-chip-active {
+    border-color: hsl(var(--metric-classes) / 0.45);
+    background: hsl(var(--metric-classes) / 0.12);
+    color: hsl(var(--metric-classes));
+  }
+
+  .teachers-filter-chip-exams.teachers-filter-chip-active {
+    border-color: hsl(var(--metric-exams) / 0.45);
+    background: hsl(var(--metric-exams) / 0.12);
+    color: hsl(var(--metric-exams));
+  }
+
+  .teachers-filter-chip-fees.teachers-filter-chip-active {
+    border-color: hsl(var(--metric-fees) / 0.45);
+    background: hsl(var(--metric-fees) / 0.12);
+    color: hsl(var(--metric-fees));
+  }
+
+  .teachers-filter-chip:hover {
+    border-color: hsl(var(--metric-teachers) / 0.3);
+    color: hsl(var(--foreground));
+  }
+
+  .teachers-view-toggle {
+    border-color: hsl(var(--glass-border));
+    background: hsl(var(--muted) / 0.25);
+  }
+
+  .teachers-view-toggle-btn {
+    color: hsl(var(--muted-foreground));
+  }
+
+  .teachers-view-toggle-btn-active {
+    background: hsl(var(--metric-teachers) / 0.15);
+    color: hsl(var(--metric-teachers));
+  }
+
+  .teachers-table-shell {
+    border-color: hsl(var(--glass-border));
+    background: hsl(var(--glass) / 0.35);
+    backdrop-filter: blur(12px);
+    overflow: hidden;
+  }
+
+  .dark .teachers-table-shell {
+    background: hsl(var(--muted) / 0.12);
+  }
+
+  .teachers-table-head {
+    background: hsl(var(--muted) / 0.45);
+    border-bottom: 1px solid hsl(var(--glass-border));
+  }
+
+  .dark .teachers-table-head {
+    background: hsl(var(--muted) / 0.25);
+  }
+
+  .teachers-table-head th {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: hsl(var(--muted-foreground));
+  }
+
+  .teachers-table-sort-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    font: inherit;
+    color: inherit;
+    transition: color 0.2s ease;
+  }
+
+  .teachers-table-sort-btn:hover {
+    color: hsl(var(--foreground));
+  }
+
+  .teachers-table-row {
+    border-bottom: 1px solid hsl(var(--glass-border) / 0.6);
+    transition: background 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .teachers-table-row:hover,
+  .teachers-table-row:focus-visible {
+    background: hsl(var(--metric-teachers) / 0.06);
+    box-shadow: inset 3px 0 0 hsl(var(--metric-teachers));
+    outline: none;
+  }
+
+  .dark .teachers-table-row:hover,
+  .dark .teachers-table-row:focus-visible {
+    background: hsl(var(--metric-teachers) / 0.08);
+  }
+
+  .teachers-table-row td {
+    padding: 0.75rem 1rem;
+    vertical-align: middle;
+  }
+
+  .teachers-table-empty {
+    padding: 2.5rem 1rem;
+    text-align: center;
+    font-size: 0.875rem;
+    color: hsl(var(--muted-foreground));
+  }
+
+  .teachers-id-badge {
+    border-radius: 0.375rem;
+    border: 1px solid hsl(var(--glass-border));
+    background: hsl(var(--muted) / 0.35);
+    padding: 0.125rem 0.5rem;
+  }
+
+  .teachers-dept-pill {
+    border-radius: 9999px;
+    border: 1px solid hsl(var(--metric-classes) / 0.25);
+    background: hsl(var(--metric-classes) / 0.1);
+    color: hsl(var(--metric-classes));
+    padding: 0.125rem 0.5rem;
+  }
+
+  .teachers-table-action:hover {
+    color: hsl(var(--metric-teachers));
+    background: hsl(var(--metric-teachers) / 0.1);
+  }
+
+  .teachers-table-action-delete:hover {
+    color: hsl(var(--warning));
+    background: hsl(var(--warning) / 0.12);
+  }
+
+  .teachers-delete-confirm-btn {
+    background: hsl(var(--warning));
+    color: hsl(var(--warning-foreground));
+  }
+
+  .teachers-delete-confirm-btn:hover {
+    background: hsl(var(--warning) / 0.9);
+  }
+
+  .teachers-pagination {
+    border-color: hsl(var(--glass-border));
+    background: hsl(var(--muted) / 0.2);
+  }
+
+  .teachers-page-btn-active {
+    background: hsl(var(--metric-teachers));
+    color: hsl(0 0% 100%);
+  }
+
+  .teachers-compact-grid {
+    display: grid;
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  @media (min-width: 640px) {
+    .teachers-compact-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .teachers-compact-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  .teachers-compact-card {
+    border: 1px solid hsl(var(--sidebar-border));
+    border-radius: 0.875rem;
+    background: hsl(var(--glass) / 0.5);
+    padding: 1rem;
+    transition: all 0.25s ease;
+  }
+
+  .dark .teachers-compact-card {
+    border-color: hsl(var(--glass-border));
+    background: hsl(var(--glass) / 0.4);
+  }
+
+  .teachers-compact-card:hover {
+    border-color: hsl(var(--metric-teachers) / 0.35);
+    background: hsl(var(--metric-teachers) / 0.06);
+    transform: translateY(-2px);
+  }
+
+  .dark .teachers-compact-card:hover {
+    box-shadow: 0 12px 28px -12px hsl(var(--metric-teachers) / 0.25);
+  }
+
+  .teachers-form-section-title {
+    @apply text-sm font-semibold text-foreground;
+  }
+
+  .teachers-create-breadcrumb a:hover {
+    color: hsl(var(--foreground));
+  }
+
+  .teacher-detail-header {
+    border-color: hsl(var(--glass-border));
+    background: hsl(var(--glass) / 0.55);
+    backdrop-filter: blur(20px) saturate(1.15);
+  }
+
+  .dark .teacher-detail-header {
+    background: hsl(var(--card) / 0.88);
+  }
+
+  .teacher-detail-header-mesh {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 70% 60% at 100% 0%, hsl(var(--metric-teachers) / 0.16), transparent 55%),
+      radial-gradient(ellipse 60% 50% at 0% 100%, hsl(var(--metric-classes) / 0.1), transparent 50%);
+  }
+
+  .teachers-accent-pill-teachers {
+    border: 1px solid hsl(var(--metric-teachers) / 0.25);
+    background: hsl(var(--metric-teachers) / 0.12);
+    color: hsl(var(--metric-teachers));
+  }
+
+  .teachers-accent-pill {
+    border-radius: 9999px;
+    padding: 0.125rem 0.5rem;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .teacher-detail-info-item {
+    border-color: hsl(var(--glass-border));
+    background: hsl(var(--muted) / 0.2);
+  }
+
+  .teachers-list-item-enter {
+    animation: students-list-item-enter 0.45s ease both;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .teachers-list-item-enter {
+      animation: none !important;
+    }
+  }
+
+  /* Settings page — bento + glass forms */
+  .settings-hero {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--metric-classes) / 0.08) 0%,
+      hsl(var(--glass) / 0.4) 45%,
+      hsl(var(--metric-attendance) / 0.06) 100%
+    );
+  }
+
+  .dark .settings-hero {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--metric-classes) / 0.14) 0%,
+      hsl(0 0% 11%) 50%,
+      hsl(var(--metric-attendance) / 0.08) 100%
+    );
+  }
+
+  .settings-hero-mesh {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 100% 0%, hsl(var(--metric-classes) / 0.2), transparent 55%),
+      radial-gradient(ellipse 60% 50% at 0% 100%, hsl(var(--metric-attendance) / 0.12), transparent 50%);
+    pointer-events: none;
+  }
+
+  .settings-hero-badge {
+    border: 1px solid hsl(var(--metric-classes) / 0.25);
+    background: hsl(var(--metric-classes) / 0.1);
+    color: hsl(var(--metric-classes));
+  }
+
+  .settings-hero-btn {
+    border-color: hsl(var(--glass-border));
+    background: hsl(var(--glass) / 0.5);
+    backdrop-filter: blur(8px);
+  }
+
+  .settings-hero-btn:hover {
+    border-color: hsl(var(--metric-classes) / 0.35);
+    background: hsl(var(--metric-classes) / 0.08);
+  }
+
+  .settings-form-input {
+    border-color: hsl(var(--glass-border));
+    background: hsl(var(--glass) / 0.45);
+    backdrop-filter: blur(8px);
+  }
+
+  .settings-form-input:focus-visible {
+    border-color: hsl(var(--metric-classes) / 0.5);
+    box-shadow: 0 0 0 2px hsl(var(--metric-classes) / 0.15);
+  }
+
+  .settings-tabs-list {
+    border: 1px solid hsl(var(--glass-border));
+    background: hsl(var(--glass) / 0.45);
+    backdrop-filter: blur(8px);
+    height: auto;
+    padding: 4px;
+    gap: 2px;
+  }
+
+  .settings-tabs-trigger {
+    border-radius: 0.5rem;
+    padding: 0.375rem 0.875rem;
+    font-size: 0.8125rem;
+    transition: all 0.2s ease;
+  }
+
+  .settings-tabs-trigger[data-state='active'] {
+    background: hsl(var(--metric-classes) / 0.12);
+    color: hsl(var(--metric-classes));
+    box-shadow: 0 1px 3px hsl(var(--metric-classes) / 0.12);
+  }
+
+  .settings-tabs-trigger:hover:not([data-state='active']) {
+    background: hsl(var(--muted) / 0.45);
+    color: hsl(var(--foreground));
+  }
+
+  .settings-primary-btn {
+    background: hsl(var(--metric-classes));
+    color: hsl(0 0% 100%);
+  }
+
+  .settings-primary-btn:hover {
+    background: hsl(var(--metric-classes) / 0.9);
+  }
+
+  .settings-enable-btn:hover {
+    border-color: hsl(var(--metric-classes) / 0.35);
+    background: hsl(var(--metric-classes) / 0.08);
+    color: hsl(var(--metric-classes));
+  }
+
+  /* Attendance page — bento + glass table (attendance accent) */
+  .attendance-hero {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--metric-attendance) / 0.08) 0%,
+      hsl(var(--glass) / 0.4) 45%,
+      hsl(var(--metric-classes) / 0.06) 100%
+    );
+  }
+
+  .dark .attendance-hero {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--metric-attendance) / 0.14) 0%,
+      hsl(0 0% 11%) 50%,
+      hsl(var(--metric-teachers) / 0.08) 100%
+    );
+  }
+
+  .attendance-hero-mesh {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 100% 0%, hsl(var(--metric-attendance) / 0.2), transparent 55%),
+      radial-gradient(ellipse 60% 50% at 0% 100%, hsl(var(--metric-classes) / 0.12), transparent 50%);
+    pointer-events: none;
+  }
+
+  .attendance-hero-badge {
+    border: 1px solid hsl(var(--metric-attendance) / 0.25);
+    background: hsl(var(--metric-attendance) / 0.1);
+    color: hsl(var(--metric-attendance));
+  }
+
+  .attendance-hero-btn {
+    border-color: hsl(var(--glass-border));
+    background: hsl(var(--glass) / 0.5);
+    backdrop-filter: blur(8px);
+  }
+
+  .attendance-hero-btn:hover {
+    border-color: hsl(var(--metric-attendance) / 0.35);
+    background: hsl(var(--metric-attendance) / 0.08);
+  }
+
+  .attendance-hero-primary {
+    background: hsl(var(--metric-attendance));
+    color: hsl(0 0% 100%);
+  }
+
+  .attendance-hero-primary:hover {
+    background: hsl(var(--metric-attendance) / 0.9);
+  }
+
+  .attendance-input {
+    border-color: hsl(var(--glass-border));
+    background: hsl(var(--glass) / 0.45);
+    backdrop-filter: blur(8px);
+  }
+
+  .attendance-input:focus-visible {
+    border-color: hsl(var(--metric-attendance) / 0.5);
+    box-shadow: 0 0 0 2px hsl(var(--metric-attendance) / 0.15);
+  }
+
+  .attendance-tabs-list {
+    border: 1px solid hsl(var(--glass-border));
+    background: hsl(var(--muted) / 0.25);
+    padding: 0.25rem;
+    height: auto;
+  }
+
+  .attendance-tab-trigger {
+    color: hsl(var(--muted-foreground));
+    border-radius: 0.5rem;
+    padding: 0.375rem 0.875rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    transition: color 0.2s ease, background 0.2s ease;
+  }
+
+  .attendance-tab-trigger[data-state='active'] {
+    background: hsl(var(--metric-attendance) / 0.15);
+    color: hsl(var(--metric-attendance));
+    box-shadow: none;
+  }
+
+  .attendance-page .students-table-row:hover {
+    background: hsl(var(--metric-attendance) / 0.06);
+    box-shadow: inset 3px 0 0 hsl(var(--metric-attendance));
+  }
+
+  .dark .attendance-page .students-table-row:hover {
+    background: hsl(var(--metric-attendance) / 0.08);
+  }
+
+  .attendance-status-chip {
+    border: 1px solid hsl(var(--glass-border));
+    background: hsl(var(--muted) / 0.3);
+    color: hsl(var(--muted-foreground));
+  }
+
+  .attendance-status-chip-present.attendance-status-chip-active {
+    border-color: hsl(var(--metric-classes) / 0.45);
+    background: hsl(var(--metric-classes) / 0.12);
+    color: hsl(var(--metric-classes));
+  }
+
+  .attendance-status-chip-absent.attendance-status-chip-active {
+    border-color: hsl(var(--metric-fees) / 0.45);
+    background: hsl(var(--metric-fees) / 0.12);
+    color: hsl(var(--metric-fees));
+  }
+
+  .attendance-status-chip-late.attendance-status-chip-active {
+    border-color: hsl(var(--metric-exams) / 0.45);
+    background: hsl(var(--metric-exams) / 0.12);
+    color: hsl(var(--metric-exams));
+  }
+
+  .attendance-status-chip:hover {
+    color: hsl(var(--foreground));
+  }
+
+  /* Record tab — card grid + session toolbar */
+  .attendance-record-toolbar {
+    border-color: hsl(var(--glass-border));
+    background: linear-gradient(
+      135deg,
+      hsl(var(--metric-attendance) / 0.06) 0%,
+      hsl(var(--glass) / 0.45) 100%
+    );
+    backdrop-filter: blur(12px);
+  }
+
+  .dark .attendance-record-toolbar {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--metric-attendance) / 0.1) 0%,
+      hsl(var(--muted) / 0.15) 100%
+    );
+  }
+
+  .attendance-record-progress-track {
+    background: hsl(var(--muted) / 0.45);
+  }
+
+  .attendance-record-progress-fill {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--metric-classes)),
+      hsl(var(--metric-attendance))
+    );
+  }
+
+  .attendance-record-legend-present {
+    color: hsl(var(--metric-classes));
+  }
+
+  .attendance-record-legend-absent {
+    color: hsl(var(--metric-fees));
+  }
+
+  .attendance-record-legend-late {
+    color: hsl(var(--metric-exams));
+  }
+
+  .attendance-bulk-btn {
+    border-color: hsl(var(--glass-border));
+    background: hsl(var(--glass) / 0.4);
+  }
+
+  .attendance-bulk-present:hover {
+    border-color: hsl(var(--metric-classes) / 0.45);
+    background: hsl(var(--metric-classes) / 0.1);
+    color: hsl(var(--metric-classes));
+  }
+
+  .attendance-bulk-absent:hover {
+    border-color: hsl(var(--metric-fees) / 0.45);
+    background: hsl(var(--metric-fees) / 0.1);
+    color: hsl(var(--metric-fees));
+  }
+
+  .attendance-record-grid {
+    display: grid;
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  @media (min-width: 640px) {
+    .attendance-record-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .attendance-record-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .attendance-record-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  .attendance-record-card {
+    border-color: hsl(var(--glass-border));
+    background: hsl(var(--glass) / 0.4);
+    backdrop-filter: blur(10px);
+  }
+
+  .attendance-record-card-present {
+    border-color: hsl(var(--metric-classes) / 0.35);
+    box-shadow: inset 3px 0 0 hsl(var(--metric-classes));
+  }
+
+  .attendance-record-card-absent {
+    border-color: hsl(var(--metric-fees) / 0.35);
+    box-shadow: inset 3px 0 0 hsl(var(--metric-fees));
+  }
+
+  .attendance-record-card-late {
+    border-color: hsl(var(--metric-exams) / 0.35);
+    box-shadow: inset 3px 0 0 hsl(var(--metric-exams));
+  }
+
+  .attendance-record-card:hover {
+    transform: translateY(-2px);
+  }
+
+  .dark .attendance-record-card:hover {
+    box-shadow: 0 12px 28px -14px hsl(var(--metric-attendance) / 0.35);
+  }
+
+  .attendance-record-avatar {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--metric-attendance) / 0.2),
+      hsl(var(--metric-classes) / 0.15)
+    );
+    color: hsl(var(--metric-attendance));
+    border: 1px solid hsl(var(--metric-attendance) / 0.2);
+  }
+
+  .dark .attendance-record-avatar {
+    color: hsl(var(--foreground));
+  }
+
+  .attendance-record-status-btn {
+    border: 1px solid hsl(var(--glass-border));
+    background: hsl(var(--muted) / 0.25);
+    color: hsl(var(--muted-foreground));
+  }
+
+  .attendance-record-status-btn-present.attendance-record-status-btn-active {
+    border-color: hsl(var(--metric-classes) / 0.5);
+    background: hsl(var(--metric-classes) / 0.15);
+    color: hsl(var(--metric-classes));
+  }
+
+  .attendance-record-status-btn-absent.attendance-record-status-btn-active {
+    border-color: hsl(var(--metric-fees) / 0.5);
+    background: hsl(var(--metric-fees) / 0.15);
+    color: hsl(var(--metric-fees));
+  }
+
+  .attendance-record-status-btn-late.attendance-record-status-btn-active {
+    border-color: hsl(var(--metric-exams) / 0.5);
+    background: hsl(var(--metric-exams) / 0.15);
+    color: hsl(var(--metric-exams));
+  }
+
+  .attendance-record-status-btn:hover {
+    color: hsl(var(--foreground));
+  }
+
+  .attendance-record-empty {
+    border-color: hsl(var(--glass-border));
+    background: hsl(var(--muted) / 0.2);
+  }
+
+  /* History tab — sidebar filters + analytics rows */
+  .attendance-history-filters {
+    border-color: hsl(var(--glass-border));
+    background: linear-gradient(
+      180deg,
+      hsl(var(--metric-teachers) / 0.06) 0%,
+      hsl(var(--glass) / 0.35) 100%
+    );
+    backdrop-filter: blur(12px);
+  }
+
+  .dark .attendance-history-filters {
+    background: linear-gradient(
+      180deg,
+      hsl(var(--metric-teachers) / 0.12) 0%,
+      hsl(var(--muted) / 0.12) 100%
+    );
+  }
+
+  .attendance-history-filter-icon {
+    background: hsl(var(--metric-teachers) / 0.12);
+    color: hsl(var(--metric-teachers));
+  }
+
+  .attendance-history-input {
+    border-color: hsl(var(--glass-border));
+    background: hsl(var(--glass) / 0.45);
+    backdrop-filter: blur(8px);
+  }
+
+  .attendance-history-input:focus-visible {
+    border-color: hsl(var(--metric-teachers) / 0.5);
+    box-shadow: 0 0 0 2px hsl(var(--metric-teachers) / 0.15);
+  }
+
+  .attendance-history-load {
+    background: hsl(var(--metric-teachers));
+    color: hsl(0 0% 100%);
+  }
+
+  .attendance-history-load:hover {
+    background: hsl(var(--metric-teachers) / 0.9);
+  }
+
+  .attendance-history-stat-card {
+    border-color: hsl(var(--glass-border));
+    background: hsl(var(--glass) / 0.35);
+    backdrop-filter: blur(10px);
+  }
+
+  .attendance-history-stat-rate {
+    border-color: hsl(var(--metric-attendance) / 0.3);
+    background: hsl(var(--metric-attendance) / 0.08);
+  }
+
+  .attendance-history-stat-present {
+    border-color: hsl(var(--metric-classes) / 0.3);
+  }
+
+  .attendance-history-stat-absent {
+    border-color: hsl(var(--metric-fees) / 0.3);
+  }
+
+  .attendance-history-stat-late {
+    border-color: hsl(var(--metric-exams) / 0.3);
+  }
+
+  .attendance-history-empty {
+    border-color: hsl(var(--glass-border));
+    background: hsl(var(--muted) / 0.15);
+  }
+
+  .attendance-history-empty-icon {
+    background: hsl(var(--metric-teachers) / 0.12);
+    color: hsl(var(--metric-teachers));
+  }
+
+  .attendance-history-row {
+    border-color: hsl(var(--glass-border));
+    background: hsl(var(--glass) / 0.3);
+    backdrop-filter: blur(10px);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .attendance-history-row:hover {
+    border-color: hsl(var(--metric-teachers) / 0.35);
+  }
+
+  .dark .attendance-history-row:hover {
+    box-shadow: 0 8px 24px -12px hsl(var(--metric-teachers) / 0.25);
+  }
+
+  .attendance-history-row-good {
+    border-color: hsl(var(--metric-classes) / 0.25);
+  }
+
+  .attendance-history-row-warn {
+    border-color: hsl(var(--metric-fees) / 0.3);
+  }
+
+  .attendance-history-rate-ring {
+    border: 2px solid hsl(var(--metric-attendance) / 0.35);
+    background: hsl(var(--metric-attendance) / 0.1);
+    color: hsl(var(--metric-attendance));
+  }
+
+  .attendance-history-bar-present {
+    background: hsl(var(--metric-classes));
+  }
+
+  .attendance-history-bar-absent {
+    background: hsl(var(--metric-fees));
+  }
+
+  .attendance-history-bar-late {
+    background: hsl(var(--metric-exams));
+  }
+
+  .attendance-history-legend-present {
+    color: hsl(var(--metric-classes));
+  }
+
+  .attendance-history-legend-absent {
+    color: hsl(var(--metric-fees));
+  }
+
+  .attendance-history-legend-late {
+    color: hsl(var(--metric-exams));
+  }
+
+  /* Fees page — bento + glass table (fees accent) */
+  .fees-hero {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--metric-fees) / 0.08) 0%,
+      hsl(var(--glass) / 0.4) 45%,
+      hsl(var(--metric-classes) / 0.06) 100%
+    );
+  }
+
+  .dark .fees-hero {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--metric-fees) / 0.14) 0%,
+      hsl(0 0% 11%) 50%,
+      hsl(var(--metric-teachers) / 0.08) 100%
+    );
+  }
+
+  .fees-hero-mesh {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 100% 0%, hsl(var(--metric-fees) / 0.2), transparent 55%),
+      radial-gradient(ellipse 60% 50% at 0% 100%, hsl(var(--metric-classes) / 0.12), transparent 50%);
+    pointer-events: none;
+  }
+
+  .fees-hero-badge {
+    border: 1px solid hsl(var(--metric-fees) / 0.25);
+    background: hsl(var(--metric-fees) / 0.1);
+    color: hsl(var(--metric-fees));
+  }
+
+  .fees-hero-btn {
+    border-color: hsl(var(--glass-border));
+    background: hsl(var(--glass) / 0.5);
+    backdrop-filter: blur(8px);
+  }
+
+  .fees-hero-btn:hover {
+    border-color: hsl(var(--metric-fees) / 0.35);
+    background: hsl(var(--metric-fees) / 0.08);
+  }
+
+  .fees-hero-primary {
+    background: hsl(var(--metric-fees));
+    color: hsl(0 0% 100%);
+  }
+
+  .fees-hero-primary:hover {
+    background: hsl(var(--metric-fees) / 0.9);
+  }
+
+  .fees-input {
+    border-color: hsl(var(--glass-border));
+    background: hsl(var(--glass) / 0.45);
+    backdrop-filter: blur(8px);
+  }
+
+  .fees-input:focus-visible {
+    border-color: hsl(var(--metric-fees) / 0.5);
+    box-shadow: 0 0 0 2px hsl(var(--metric-fees) / 0.15);
+  }
+
+  .fees-tabs-list {
+    border: 1px solid hsl(var(--glass-border));
+    background: hsl(var(--muted) / 0.25);
+    padding: 0.25rem;
+    height: auto;
+  }
+
+  .fees-tab-trigger {
+    color: hsl(var(--muted-foreground));
+    border-radius: 0.5rem;
+    padding: 0.375rem 0.875rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    transition: color 0.2s ease, background 0.2s ease;
+  }
+
+  .fees-tab-trigger[data-state='active'] {
+    background: hsl(var(--metric-fees) / 0.15);
+    color: hsl(var(--metric-fees));
+    box-shadow: none;
+  }
+
+  .fees-page .students-table-row:hover {
+    background: hsl(var(--metric-fees) / 0.06);
+    box-shadow: inset 3px 0 0 hsl(var(--metric-fees));
+  }
+
+  .dark .fees-page .students-table-row:hover {
+    background: hsl(var(--metric-fees) / 0.08);
+  }
+
+  .fees-filter-chip {
+    border: 1px solid hsl(var(--glass-border));
+    background: hsl(var(--muted) / 0.3);
+    color: hsl(var(--muted-foreground));
+  }
+
+  .fees-filter-chip-active {
+    border-color: hsl(var(--metric-fees) / 0.45);
+    background: hsl(var(--metric-fees) / 0.12);
+    color: hsl(var(--metric-fees));
+  }
+
+  .fees-filter-chip:hover {
+    border-color: hsl(var(--metric-fees) / 0.3);
+    color: hsl(var(--foreground));
+  }
+
+  .fees-table-row-overdue {
+    background: hsl(var(--metric-fees) / 0.04);
+  }
+
+  .dark .fees-table-row-overdue {
+    background: hsl(var(--metric-fees) / 0.06);
+  }
+
+  .fees-pay-btn {
+    background: hsl(var(--metric-fees));
+    color: hsl(0 0% 100%);
+  }
+
+  .fees-pay-btn:hover:not(:disabled) {
+    background: hsl(var(--metric-fees) / 0.9);
+  }
+
+  .fees-pay-btn:disabled {
+    opacity: 0.45;
+  }
+
+  .fees-dialog-icon-badge {
+    border-color: hsl(var(--metric-fees) / 0.3);
+    background: hsl(var(--metric-fees) / 0.12);
+    color: hsl(var(--metric-fees));
+  }
+
+  .fees-list-item-enter {
+    animation: dashboard-list-enter 0.35s ease backwards;
+  }
+
+  /* Exams page — bento + glass table (exams accent) */
+  .exams-hero {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--metric-exams) / 0.08) 0%,
+      hsl(var(--glass) / 0.4) 45%,
+      hsl(var(--metric-classes) / 0.06) 100%
+    );
+  }
+
+  .dark .exams-hero {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--metric-exams) / 0.14) 0%,
+      hsl(0 0% 11%) 50%,
+      hsl(var(--metric-teachers) / 0.08) 100%
+    );
+  }
+
+  .exams-hero-mesh {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 100% 0%, hsl(var(--metric-exams) / 0.2), transparent 55%),
+      radial-gradient(ellipse 60% 50% at 0% 100%, hsl(var(--metric-classes) / 0.12), transparent 50%);
+    pointer-events: none;
+  }
+
+  .exams-hero-badge {
+    border: 1px solid hsl(var(--metric-exams) / 0.25);
+    background: hsl(var(--metric-exams) / 0.1);
+    color: hsl(var(--metric-exams));
+  }
+
+  .exams-hero-btn {
+    border-color: hsl(var(--glass-border));
+    background: hsl(var(--glass) / 0.5);
+    backdrop-filter: blur(8px);
+  }
+
+  .exams-hero-btn:hover {
+    border-color: hsl(var(--metric-exams) / 0.35);
+    background: hsl(var(--metric-exams) / 0.08);
+  }
+
+  .exams-hero-primary {
+    background: hsl(var(--metric-exams));
+    color: hsl(0 0% 100%);
+  }
+
+  .exams-hero-primary:hover {
+    background: hsl(var(--metric-exams) / 0.9);
+  }
+
+  .exams-input {
+    border-color: hsl(var(--glass-border));
+    background: hsl(var(--glass) / 0.45);
+    backdrop-filter: blur(8px);
+  }
+
+  .exams-input:focus-visible {
+    border-color: hsl(var(--metric-exams) / 0.5);
+    box-shadow: 0 0 0 2px hsl(var(--metric-exams) / 0.15);
+  }
+
+  .exams-tabs-list {
+    border: 1px solid hsl(var(--glass-border));
+    background: hsl(var(--muted) / 0.25);
+    padding: 0.25rem;
+    height: auto;
+  }
+
+  .exams-tab-trigger {
+    color: hsl(var(--muted-foreground));
+    border-radius: 0.5rem;
+    padding: 0.375rem 0.875rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    transition: color 0.2s ease, background 0.2s ease;
+  }
+
+  .exams-tab-trigger[data-state='active'] {
+    background: hsl(var(--metric-exams) / 0.15);
+    color: hsl(var(--metric-exams));
+    box-shadow: none;
+  }
+
+  .exams-page .students-table-row:hover {
+    background: hsl(var(--metric-exams) / 0.06);
+    box-shadow: inset 3px 0 0 hsl(var(--metric-exams));
+  }
+
+  .dark .exams-page .students-table-row:hover {
+    background: hsl(var(--metric-exams) / 0.08);
+  }
+
+  .exams-list-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+  }
+
+  .exams-list-card {
+    border-color: hsl(var(--glass-border));
+    background: hsl(var(--glass) / 0.35);
+    backdrop-filter: blur(12px);
+  }
+
+  .dark .exams-list-card {
+    background: hsl(var(--muted) / 0.12);
+  }
+
+  .exams-list-card:hover {
+    border-color: hsl(var(--metric-exams) / 0.35);
+  }
+
+  .dark .exams-list-card:hover {
+    box-shadow: 0 4px 24px hsl(var(--metric-exams) / 0.08);
+  }
+
+  .exams-list-icon {
+    background: hsl(var(--metric-exams) / 0.12);
+    color: hsl(var(--metric-exams));
+  }
+
+  .exams-list-subject {
+    border: 1px solid hsl(var(--metric-exams) / 0.2);
+    background: hsl(var(--metric-exams) / 0.08);
+    color: hsl(var(--metric-exams));
+  }
+
+  .exams-list-empty,
+  .exams-marks-empty,
+  .exams-results-empty {
+    border-color: hsl(var(--glass-border));
+    background: hsl(var(--glass) / 0.3);
+    backdrop-filter: blur(12px);
+  }
+
+  .exams-marks-toolbar {
+    border-color: hsl(var(--glass-border));
+    background: linear-gradient(
+      135deg,
+      hsl(var(--metric-exams) / 0.06) 0%,
+      hsl(var(--glass) / 0.45) 100%
+    );
+    backdrop-filter: blur(12px);
+  }
+
+  .dark .exams-marks-toolbar {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--metric-exams) / 0.1) 0%,
+      hsl(var(--muted) / 0.15) 100%
+    );
+  }
+
+  .exams-marks-save {
+    background: hsl(var(--metric-exams));
+    color: hsl(0 0% 100%);
+  }
+
+  .exams-marks-save:hover {
+    background: hsl(var(--metric-exams) / 0.9);
+  }
+
+  .exams-search-input,
+  .exams-filter-select {
+    border-color: hsl(var(--glass-border));
+    background: hsl(var(--glass) / 0.45);
+    backdrop-filter: blur(8px);
+  }
+
+  .exams-search-input:focus-visible,
+  .exams-filter-select:focus-visible {
+    border-color: hsl(var(--metric-exams) / 0.5);
+    box-shadow: 0 0 0 2px hsl(var(--metric-exams) / 0.15);
+  }
+
+  .exams-view-toggle {
+    border-color: hsl(var(--glass-border));
+    background: hsl(var(--muted) / 0.25);
+  }
+
+  .exams-view-toggle-btn {
+    color: hsl(var(--muted-foreground));
+  }
+
+  .exams-view-toggle-btn-active {
+    background: hsl(var(--metric-exams) / 0.15);
+    color: hsl(var(--metric-exams));
+  }
+
+  .exams-avatar {
+    background: linear-gradient(135deg, hsl(var(--metric-exams) / 0.2), hsl(var(--metric-classes) / 0.15));
+    color: hsl(var(--metric-exams));
+    border: 1px solid hsl(var(--metric-exams) / 0.2);
+  }
+
+  .exams-count-pill {
+    border: 1px solid hsl(var(--metric-exams) / 0.25);
+    background: hsl(var(--metric-exams) / 0.1);
+    color: hsl(var(--metric-exams));
+    border-radius: 9999px;
+    padding: 0.125rem 0.5rem;
+    font-weight: 600;
+  }
+
+  .exams-subject-pill {
+    border: 1px solid hsl(var(--metric-exams) / 0.2);
+    background: hsl(var(--metric-exams) / 0.08);
+    color: hsl(var(--metric-exams));
+    border-radius: 9999px;
+    padding: 0.125rem 0.5rem;
+    font-weight: 500;
+  }
+
+  .exams-page-btn-active {
+    background: hsl(var(--metric-exams));
+    color: hsl(0 0% 100%);
+  }
+
+  .exams-page .students-compact-card:hover {
+    border-color: hsl(var(--metric-exams) / 0.35);
+  }
+
+  .dark .exams-page .students-compact-card:hover {
+    box-shadow: 0 4px 24px hsl(var(--metric-exams) / 0.08);
+  }
+
+  .exams-page .students-table-sort-btn:hover {
+    color: hsl(var(--metric-exams));
+  }
+
+  .exams-page .students-table-action:hover {
+    color: hsl(var(--metric-exams));
+    background: hsl(var(--metric-exams) / 0.1);
+  }
+
+  .exams-form-input {
+    border-color: hsl(var(--glass-border));
+    background: hsl(var(--muted) / 0.25);
+  }
+
+  .exams-form-input:focus-visible {
+    border-color: hsl(var(--metric-exams) / 0.5);
+    box-shadow: 0 0 0 2px hsl(var(--metric-exams) / 0.12);
+  }
+
+  .exams-dialog-icon-badge {
+    border: 1px solid hsl(var(--metric-exams) / 0.25);
+    background: hsl(var(--metric-exams) / 0.12);
+    color: hsl(var(--metric-exams));
+  }
+
+  .exams-class-picker {
+    border-color: hsl(var(--glass-border));
+    background: hsl(var(--muted) / 0.2);
+  }
+
+  .exams-class-option {
+    color: hsl(var(--muted-foreground));
+  }
+
+  .exams-class-option:hover {
+    background: hsl(var(--metric-exams) / 0.08);
+    color: hsl(var(--foreground));
+  }
+
+  .exams-class-option-active {
+    background: hsl(var(--metric-exams) / 0.12);
+    color: hsl(var(--metric-exams));
+    font-weight: 600;
+  }
+
+  .exams-results-stat-card {
+    border-color: hsl(var(--glass-border));
+    background: hsl(var(--glass) / 0.35);
+    backdrop-filter: blur(12px);
+  }
+
+  .exams-results-stat-pass {
+    border-color: hsl(var(--metric-classes) / 0.25);
+  }
+
+  .exams-results-stat-rate {
+    border-color: hsl(var(--metric-exams) / 0.25);
   }
 
   .students-form-dialog {
@@ -1324,7 +2844,9 @@
     .login-video-bg,
     .login-video-mesh,
     .login-card-icon-ring,
-    .login-card-enter {
+    .login-card-enter,
+    .login-panel-arrive-left,
+    .login-panel-arrive-right {
       animation: none !important;
     }
 
@@ -1392,8 +2914,12 @@
   }
 
   .login-lines-grid-fine {
-    opacity: 0;
-    pointer-events: none;
+    background-image:
+      linear-gradient(hsl(var(--foreground) / 0.045) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--foreground) / 0.045) 1px, transparent 1px);
+    background-size: 16px 16px;
+    opacity: 0.38;
+    animation: login-lines-grid-drift-reverse 64s linear infinite;
   }
 
   .dark .login-lines-grid-fine {
@@ -1402,16 +2928,21 @@
       linear-gradient(90deg, hsl(var(--foreground) / 0.055) 1px, transparent 1px);
     background-size: 14px 14px;
     opacity: 0.45;
-    animation: login-lines-grid-drift-reverse 64s linear infinite;
   }
 
   .login-lines-diagonal {
-    opacity: 0;
-    pointer-events: none;
+    background: repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 47px,
+      hsl(var(--foreground) / 0.028) 47px,
+      hsl(var(--foreground) / 0.028) 48px
+    );
+    opacity: 0.55;
+    animation: login-lines-diagonal-drift 36s linear infinite;
   }
 
   .dark .login-lines-diagonal {
-    opacity: 1;
     background: repeating-linear-gradient(
       -45deg,
       transparent,
@@ -1419,26 +2950,19 @@
       hsl(var(--foreground) / 0.035) 47px,
       hsl(var(--foreground) / 0.035) 48px
     );
-    animation: login-lines-diagonal-drift 36s linear infinite;
-  }
-
-  .login-lines-canvas {
-    opacity: 0.42;
-    mix-blend-mode: normal;
-  }
-
-  .dark .login-lines-canvas {
-    opacity: 0.72;
+    opacity: 1;
   }
 
   .login-lines-vignette {
-    background: linear-gradient(
-      to bottom,
-      hsl(var(--background) / 0.35) 0%,
-      transparent 14%,
-      transparent 86%,
-      hsl(var(--background) / 0.25) 100%
-    );
+    background:
+      radial-gradient(ellipse 90% 70% at 50% 45%, transparent 40%, hsl(var(--background) / 0.35) 100%),
+      linear-gradient(
+        to bottom,
+        hsl(var(--background) / 0.35) 0%,
+        transparent 14%,
+        transparent 86%,
+        hsl(var(--background) / 0.25) 100%
+      );
     pointer-events: none;
   }
 
@@ -1493,9 +3017,77 @@
     }
   }
 
-  /* Login — ScholarFlow 3D carousel (left panel, one card at a time) */
+  /* Login — ScholarFlow 3D showcase (left panel, single card) */
   .login-saas-3d {
     @apply relative min-h-[480px] w-full py-2;
+  }
+
+  .login-saas-3d-placeholder {
+    @apply w-full;
+  }
+
+  .login-saas-3d-viewport-single {
+    overflow: hidden;
+  }
+
+  .login-saas-3d-stage-single {
+    position: relative;
+    top: auto;
+    left: auto;
+    margin: 0 auto;
+    transform: none;
+  }
+
+  .login-saas-3d-single-card {
+    animation: login-saas-3d-card-swap 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  @keyframes login-saas-3d-card-swap {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  /* Login — initial panel arrival (left showcase + right form card) */
+  @keyframes login-panel-arrive-left {
+    from {
+      opacity: 0;
+      transform: translateX(-32px) translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0) translateY(0);
+    }
+  }
+
+  @keyframes login-panel-arrive-right {
+    from {
+      opacity: 0;
+      transform: translateX(32px) translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0) translateY(0);
+    }
+  }
+
+  .login-panel-arrive-left {
+    animation: login-panel-arrive-left 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+  }
+
+  .login-panel-arrive-right {
+    animation: login-panel-arrive-right 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .login-saas-3d-single-card,
+    .login-panel-arrive-left,
+    .login-panel-arrive-right {
+      animation: none !important;
+    }
   }
 
   .login-saas-3d-viewport {
@@ -1634,10 +3226,19 @@
     border: 1px solid hsl(var(--glass-border));
     background: hsl(var(--glass) / 0.96);
     backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     box-shadow: 0 16px 40px hsl(var(--foreground) / 0.08);
     transform: translateZ(10px);
     overflow: hidden;
     backface-visibility: hidden;
+  }
+
+  :root:not(.dark) .login-saas-3d-slide-card-face {
+    background: hsl(0 0% 100% / 0.82);
+    border-color: hsl(222 47% 11% / 0.1);
+    box-shadow:
+      0 16px 40px hsl(222 47% 11% / 0.1),
+      inset 0 1px 0 hsl(0 0% 100% / 0.9);
   }
 
   .dark .login-saas-3d-slide-card-face {
@@ -2228,7 +3829,14 @@
     border-color: hsl(var(--glass-border)) !important;
     background: hsl(var(--glass) / 0.58) !important;
     backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     color: hsl(var(--foreground)) !important;
+  }
+
+  :root:not(.dark) .login-header-control {
+    background: hsl(0 0% 100% / 0.72) !important;
+    border-color: hsl(222 47% 11% / 0.1) !important;
+    box-shadow: 0 4px 16px hsl(222 47% 11% / 0.06);
   }
 
   .login-header-control:hover {
@@ -2241,8 +3849,9 @@
     color: hsl(var(--muted-foreground));
   }
 
-  .login-card-enter {
-    animation: dashboard-fade-up 0.55s ease-out both;
+  .login-card-enter,
+  .login-panel-arrive-right {
+    animation: login-panel-arrive-right 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both;
   }
 
   /* Login card — premium bento glass slab */
@@ -2273,9 +3882,19 @@
     background: hsl(var(--glass));
     border: 1px solid hsl(var(--glass-border));
     backdrop-filter: blur(28px) saturate(1.2);
+    -webkit-backdrop-filter: blur(28px) saturate(1.2);
     box-shadow:
       0 4px 24px rgba(15, 23, 42, 0.06),
       inset 0 1px 0 hsl(var(--glass-border));
+  }
+
+  :root:not(.dark) .login-card-inner {
+    background: hsl(0 0% 100% / 0.78);
+    border-color: hsl(0 0% 100% / 0.9);
+    box-shadow:
+      0 12px 40px hsl(222 47% 11% / 0.1),
+      0 4px 24px rgba(15, 23, 42, 0.06),
+      inset 0 1px 0 hsl(0 0% 100% / 0.95);
   }
 
   .dark .login-card-inner {
@@ -2689,11 +4308,47 @@
   
   /* Dashboard card styles */
   .dashboard-card {
-    @apply rounded-lg border bg-card p-4 shadow-sm transition-all hover:shadow-md;
+    @apply rounded-lg border bg-card p-4 transition-all;
   }
   
   .dashboard-stat {
     @apply text-2xl font-bold;
+  }
+
+  /* Sub-cards — no shadow in light mode (must come after page-specific hover rules) */
+  :root:not(.dark) .students-compact-card,
+  :root:not(.dark) .teachers-compact-card,
+  :root:not(.dark) .students-table-shell,
+  :root:not(.dark) .teachers-table-shell,
+  :root:not(.dark) .student-detail-info-item,
+  :root:not(.dark) .teacher-detail-info-item,
+  :root:not(.dark) .student-detail-tabs,
+  :root:not(.dark) .class-detail-tabs,
+  :root:not(.dark) .student-detail-tab-panel,
+  :root:not(.dark) .class-detail-tab-panel,
+  :root:not(.dark) .attendance-record-card,
+  :root:not(.dark) .attendance-record-toolbar,
+  :root:not(.dark) .attendance-history-filters,
+  :root:not(.dark) .attendance-history-stat-card,
+  :root:not(.dark) .attendance-history-row,
+  :root:not(.dark) .attendance-history-empty,
+  :root:not(.dark) .exams-list-card,
+  :root:not(.dark) .exams-marks-toolbar,
+  :root:not(.dark) .exams-marks-empty,
+  :root:not(.dark) .exams-results-stat-card,
+  :root:not(.dark) .exams-results-empty,
+  :root:not(.dark) .settings-tabs-list,
+  :root:not(.dark) .settings-add-user,
+  :root:not(.dark) .dashboard-shell .rounded-2xl.border,
+  :root:not(.dark) .dashboard-shell .rounded-xl.border,
+  :root:not(.dark) .students-compact-card:hover,
+  :root:not(.dark) .teachers-compact-card:hover,
+  :root:not(.dark) .classes-page .students-compact-card:hover,
+  :root:not(.dark) .exams-page .students-compact-card:hover,
+  :root:not(.dark) .attendance-record-card:hover,
+  :root:not(.dark) .attendance-history-row:hover,
+  :root:not(.dark) .teachers-compact-card:hover {
+    box-shadow: none !important;
   }
 }
 
@@ -3173,4 +4828,11 @@ html[dir='rtl'] .students-pagination {
 
 html[dir='rtl'] .students-compact-card .students-table-actions {
   justify-content: flex-start;
+}
+
+/* Modal overlay — identical blur in light & dark; only scrim color differs */
+.dialog-overlay {
+  background: hsl(var(--modal-overlay-scrim) / var(--modal-overlay-scrim-opacity));
+  backdrop-filter: blur(5px) saturate(1.15);
+  -webkit-backdrop-filter: blur(5px) saturate(1.15);
 }

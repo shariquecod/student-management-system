@@ -1,38 +1,77 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { PageHeader, GlassPanel, StatusBadge, BentoCard, BentoGrid } from '@/components/shared'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { useState } from 'react'
+import dynamic from 'next/dynamic'
+import { Wallet, DollarSign, AlertCircle, Users } from 'lucide-react'
+import { BentoGrid, BentoCard, AnimatedStat } from '@/components/shared'
+import { FeesHero, FeesStatSkeleton, FeesBalancesPanel } from '@/components/fees'
+import type { FeesPaymentForm } from '@/components/fees/fees-payment-dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { fetchStudentFeeSummaries, fetchFeeCategories, recordPayment } from '@/services/school-api'
-import type { StudentFeeSummary, FeeCategory, PaymentMethod } from '@/types'
+import { useFeesPage } from '@/hooks/use-fees-page'
+import { recordPayment } from '@/services/school-api'
+import type { StudentFeeSummary } from '@/types'
 import { toast } from 'sonner'
-import { metricAccents } from '@/utils/theme'
 import { useTranslation } from '@/i18n/use-translation'
+
+const FeesCategoriesPanel = dynamic(
+  () => import('@/components/fees/fees-categories-panel').then((m) => m.FeesCategoriesPanel),
+  { ssr: false }
+)
+
+const FeesPaymentDialog = dynamic(
+  () => import('@/components/fees/fees-payment-dialog').then((m) => m.FeesPaymentDialog),
+  { ssr: false }
+)
 
 export default function FeesPage() {
   const { t } = useTranslation()
-  const [summaries, setSummaries] = useState<StudentFeeSummary[]>([])
-  const [categories, setCategories] = useState<FeeCategory[]>([])
-  const [overdueOnly, setOverdueOnly] = useState(false)
+  const {
+    stats,
+    paginatedSummaries,
+    categories,
+    categoriesLoading,
+    initialLoading,
+    refreshing,
+    search,
+    setSearch,
+    overdueOnly,
+    setOverdueFilter,
+    activeTab,
+    setActiveTab,
+    page,
+    setPage,
+    totalPages,
+    totalFiltered,
+    start,
+    end,
+    pageSize,
+    reload,
+  } = useFeesPage()
+
   const [payDialog, setPayDialog] = useState(false)
   const [selected, setSelected] = useState<StudentFeeSummary | null>(null)
-  const [payForm, setPayForm] = useState({ amount: 0, method: 'cash' as PaymentMethod, date: new Date().toISOString().split('T')[0], notes: '' })
+  const [submitting, setSubmitting] = useState(false)
+  const [payForm, setPayForm] = useState<FeesPaymentForm>({
+    amount: 0,
+    method: 'cash',
+    date: new Date().toISOString().split('T')[0],
+    notes: '',
+  })
 
-  const load = () => {
-    fetchStudentFeeSummaries(overdueOnly).then(setSummaries)
-    fetchFeeCategories().then(setCategories)
+  const openPayDialog = (summary: StudentFeeSummary) => {
+    setSelected(summary)
+    setPayForm({
+      amount: summary.balance,
+      method: 'cash',
+      date: new Date().toISOString().split('T')[0],
+      notes: '',
+    })
+    setPayDialog(true)
   }
-
-  useEffect(() => { load() }, [overdueOnly])
 
   const submitPayment = async () => {
     if (!selected) return
+    setSubmitting(true)
     try {
       await recordPayment({
         studentId: selected.studentId,
@@ -42,105 +81,121 @@ export default function FeesPage() {
         date: payForm.date,
         notes: payForm.notes,
       })
-      toast.success('Payment recorded')
+      toast.success(t('fees.paymentRecorded'))
       setPayDialog(false)
-      load()
-    } catch { toast.error('Failed to record payment') }
+      await reload()
+    } catch {
+      toast.error(t('fees.paymentFailed'))
+    } finally {
+      setSubmitting(false)
+    }
   }
 
-  const totalDue = summaries.reduce((s, r) => s + r.balance, 0)
-  const overdueCount = summaries.filter((s) => s.isOverdue && s.balance > 0).length
-
   return (
-    <div className="space-y-6">
-      <PageHeader title={t('fees.title')} description={t('fees.description')} />
+    <div className="dashboard-shell fees-page space-y-4">
       <BentoGrid>
-        <BentoCard colSpan={2} accentColor={metricAccents.fees.light}>
-          <p className="text-sm text-muted-foreground">Outstanding Balance</p>
-          <p className="text-3xl font-bold">${totalDue.toLocaleString()}</p>
+        <BentoCard colSpan={12} delay={0} className="!p-0">
+          <FeesHero
+            totalAccounts={stats.totalAccounts}
+            outstanding={stats.totalDue}
+            onRefresh={reload}
+            refreshing={refreshing}
+          />
         </BentoCard>
-        <BentoCard colSpan={2} accentColor="hsl(0 70% 50%)">
-          <p className="text-sm text-muted-foreground">Overdue Accounts</p>
-          <p className="text-3xl font-bold">{overdueCount}</p>
+
+        {initialLoading ? (
+          <FeesStatSkeleton />
+        ) : (
+          <>
+            <BentoCard colSpan={3} accent="fees" delay={60}>
+              <AnimatedStat
+                title={t('fees.totalAccounts')}
+                value={stats.totalAccounts}
+                icon={Users}
+                accent="fees"
+                compact
+              />
+            </BentoCard>
+            <BentoCard colSpan={3} accent="fees" delay={120}>
+              <AnimatedStat
+                title={t('fees.outstandingBalance')}
+                value={stats.totalDue}
+                icon={Wallet}
+                accent="fees"
+                prefix="$"
+                compact
+              />
+            </BentoCard>
+            <BentoCard colSpan={3} accent="classes" delay={180}>
+              <AnimatedStat
+                title={t('fees.totalCollected')}
+                value={stats.totalCollected}
+                icon={DollarSign}
+                accent="classes"
+                prefix="$"
+                compact
+              />
+            </BentoCard>
+            <BentoCard colSpan={3} accent="exams" delay={240}>
+              <AnimatedStat
+                title={t('fees.overdueAccounts')}
+                value={stats.overdueCount}
+                icon={AlertCircle}
+                accent="exams"
+                compact
+              />
+            </BentoCard>
+          </>
+        )}
+
+        <BentoCard colSpan={12} delay={300}>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="fees-tabs">
+            <TabsList className="fees-tabs-list mb-4">
+              <TabsTrigger value="balances" className="fees-tab-trigger">
+                {t('fees.tabBalances')}
+              </TabsTrigger>
+              <TabsTrigger value="categories" className="fees-tab-trigger">
+                {t('fees.tabCategories')}
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="balances">
+              <FeesBalancesPanel
+                summaries={paginatedSummaries}
+                loading={initialLoading}
+                search={search}
+                onSearchChange={setSearch}
+                overdueOnly={overdueOnly}
+                onOverdueOnlyChange={setOverdueFilter}
+                onPay={openPayDialog}
+                page={page}
+                totalPages={totalPages}
+                totalFiltered={totalFiltered}
+                start={start}
+                end={end}
+                pageSize={pageSize}
+                onPageChange={setPage}
+              />
+            </TabsContent>
+            <TabsContent value="categories">
+              {activeTab === 'categories' && (
+                <FeesCategoriesPanel categories={categories} loading={categoriesLoading} />
+              )}
+            </TabsContent>
+          </Tabs>
         </BentoCard>
       </BentoGrid>
-      <Tabs defaultValue="balances">
-        <TabsList>
-          <TabsTrigger value="balances">Balances</TabsTrigger>
-          <TabsTrigger value="categories">Categories</TabsTrigger>
-        </TabsList>
-        <TabsContent value="balances">
-          <GlassPanel>
-            <div className="flex gap-3 mb-4">
-              <Button variant={overdueOnly ? 'default' : 'outline'} onClick={() => setOverdueOnly(!overdueOnly)}>
-                {overdueOnly ? 'Showing Overdue' : 'Show Overdue Only'}
-              </Button>
-            </div>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Student</TableHead>
-                  <TableHead>Class</TableHead>
-                  <TableHead>Due</TableHead>
-                  <TableHead>Paid</TableHead>
-                  <TableHead>Balance</TableHead>
-                  <TableHead>Last Payment</TableHead>
-                  <TableHead />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {summaries.map((s) => (
-                  <TableRow key={s.studentId} className={s.isOverdue && s.balance > 0 ? 'bg-destructive/5' : ''}>
-                    <TableCell className="font-medium">{s.studentName}</TableCell>
-                    <TableCell>{s.className}</TableCell>
-                    <TableCell>${s.totalDue.toLocaleString()}</TableCell>
-                    <TableCell>${s.totalPaid.toLocaleString()}</TableCell>
-                    <TableCell className={s.balance > 0 ? 'text-destructive font-semibold' : ''}>${s.balance.toLocaleString()}</TableCell>
-                    <TableCell>{s.lastPaymentDate ?? '—'}</TableCell>
-                    <TableCell>
-                      <Button size="sm" onClick={() => { setSelected(s); setPayForm({ ...payForm, amount: s.balance }); setPayDialog(true) }}>Pay</Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </GlassPanel>
-        </TabsContent>
-        <TabsContent value="categories">
-          <GlassPanel>
-            <Table>
-              <TableHeader><TableRow><TableHead>Category</TableHead><TableHead>Description</TableHead><TableHead>Default Amount</TableHead></TableRow></TableHeader>
-              <TableBody>
-                {categories.map((c) => (
-                  <TableRow key={c.id}><TableCell className="font-medium">{c.name}</TableCell><TableCell>{c.description}</TableCell><TableCell>${c.defaultAmount}</TableCell></TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </GlassPanel>
-        </TabsContent>
-      </Tabs>
-      <Dialog open={payDialog} onOpenChange={setPayDialog}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Record Payment — {selected?.studentName}</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <div><Label>Amount</Label><Input type="number" value={payForm.amount} onChange={(e) => setPayForm({ ...payForm, amount: Number(e.target.value) })} /></div>
-            <div><Label>Method</Label>
-              <Select value={payForm.method} onValueChange={(v) => setPayForm({ ...payForm, method: v as PaymentMethod })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="cash">Cash</SelectItem>
-                  <SelectItem value="card">Card</SelectItem>
-                  <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                  <SelectItem value="online">Online</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div><Label>Date</Label><Input type="date" value={payForm.date} onChange={(e) => setPayForm({ ...payForm, date: e.target.value })} /></div>
-            <div><Label>Notes</Label><Input value={payForm.notes} onChange={(e) => setPayForm({ ...payForm, notes: e.target.value })} /></div>
-            <Button className="w-full" onClick={submitPayment}>Record Payment</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+
+      {payDialog && (
+        <FeesPaymentDialog
+          open={payDialog}
+          onOpenChange={setPayDialog}
+          student={selected}
+          form={payForm}
+          onFormChange={setPayForm}
+          onSubmit={submitPayment}
+          loading={submitting}
+        />
+      )}
     </div>
   )
 }

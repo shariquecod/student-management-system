@@ -29,7 +29,6 @@ const carouselSlides: CarouselSlide[] = [
 ]
 
 const SLIDE_COUNT = carouselSlides.length
-const SLIDE_ANGLE = 360 / SLIDE_COUNT
 const AUTO_ADVANCE_MS = 4500
 
 interface Login3DSceneProps {
@@ -130,10 +129,6 @@ function SlideCard({
     <div className="login-saas-3d-slide-card">
       <div className="login-saas-3d-slide-card-depth">
         <div className="login-saas-3d-slide-card-layer login-saas-3d-slide-card-back" />
-        <div className="login-saas-3d-slide-card-layer login-saas-3d-slide-card-edge login-saas-3d-slide-card-edge-right" />
-        <div className="login-saas-3d-slide-card-layer login-saas-3d-slide-card-edge login-saas-3d-slide-card-edge-left" />
-        <div className="login-saas-3d-slide-card-layer login-saas-3d-slide-card-edge login-saas-3d-slide-card-edge-bottom" />
-
         <div className="login-saas-3d-slide-card-face">
           <div
             className={cn(
@@ -167,32 +162,16 @@ function SlideCard({
 export function Login3DScene({ className }: Login3DSceneProps) {
   const { t } = useTranslation()
   const rootRef = useRef<HTMLDivElement>(null)
-  const [rotationStep, setRotationStep] = useState(0)
+  const [activeIndex, setActiveIndex] = useState(0)
   const [reduceMotion, setReduceMotion] = useState(false)
-  const [isLargeScreen, setIsLargeScreen] = useState(false)
   const [isVisible, setIsVisible] = useState(true)
 
-  const activeIndex = ((rotationStep % SLIDE_COUNT) + SLIDE_COUNT) % SLIDE_COUNT
-
   const goToSlide = useCallback((index: number) => {
-    setRotationStep((prev) => {
-      const current = ((prev % SLIDE_COUNT) + SLIDE_COUNT) % SLIDE_COUNT
-      let delta = index - current
-      if (delta < 0) delta += SLIDE_COUNT
-      return prev + delta
-    })
+    setActiveIndex(index)
   }, [])
 
   const goNext = useCallback(() => {
-    setRotationStep((prev) => prev + 1)
-  }, [])
-
-  useEffect(() => {
-    const media = window.matchMedia('(min-width: 1024px)')
-    const syncScreen = () => setIsLargeScreen(media.matches)
-    syncScreen()
-    media.addEventListener('change', syncScreen)
-    return () => media.removeEventListener('change', syncScreen)
+    setActiveIndex((prev) => (prev + 1) % SLIDE_COUNT)
   }, [])
 
   useEffect(() => {
@@ -205,7 +184,7 @@ export function Login3DScene({ className }: Login3DSceneProps) {
 
   useEffect(() => {
     const el = rootRef.current
-    if (!el || !isLargeScreen) return
+    if (!el) return
 
     const observer = new IntersectionObserver(
       ([entry]) => setIsVisible(entry.isIntersecting),
@@ -213,18 +192,14 @@ export function Login3DScene({ className }: Login3DSceneProps) {
     )
     observer.observe(el)
     return () => observer.disconnect()
-  }, [isLargeScreen])
+  }, [])
 
   useEffect(() => {
-    if (reduceMotion || !isVisible || !isLargeScreen || document.hidden) return
+    if (reduceMotion || !isVisible || document.hidden) return
 
     const timer = window.setInterval(goNext, AUTO_ADVANCE_MS)
     return () => window.clearInterval(timer)
-  }, [goNext, reduceMotion, isVisible, isLargeScreen])
-
-  if (!isLargeScreen) {
-    return null
-  }
+  }, [goNext, reduceMotion, isVisible])
 
   const activeSlide = carouselSlides[activeIndex]
 
@@ -234,36 +209,10 @@ export function Login3DScene({ className }: Login3DSceneProps) {
       className={cn('login-saas-3d hidden lg:flex flex-col items-center justify-center', className)}
       aria-hidden
     >
-      <div className="login-saas-3d-viewport">
-        <div className="login-saas-3d-stage">
-          <div className="login-saas-3d-orbit-track" />
-          <div className="login-saas-3d-orbit-track login-saas-3d-orbit-track-inner" />
-
-          <div
-            className="login-saas-3d-carousel"
-            style={
-              {
-                '--carousel-rotate': `${-rotationStep * SLIDE_ANGLE}deg`,
-              } as React.CSSProperties
-            }
-          >
-            {carouselSlides.map((slide, index) => (
-              <div
-                key={slide.id}
-                className={cn(
-                  'login-saas-3d-slide',
-                  `login-saas-3d-slide-${slide.id}`,
-                  index === activeIndex && 'login-saas-3d-slide-active'
-                )}
-                style={
-                  {
-                    '--slide-angle': `${index * SLIDE_ANGLE}deg`,
-                  } as React.CSSProperties
-                }
-              >
-                <SlideCard {...slide} index={index} />
-              </div>
-            ))}
+      <div className="login-saas-3d-viewport login-saas-3d-viewport-single">
+        <div className="login-saas-3d-stage login-saas-3d-stage-single">
+          <div key={activeSlide.id} className="login-saas-3d-single-card">
+            <SlideCard {...activeSlide} index={activeIndex} />
           </div>
         </div>
       </div>
@@ -282,7 +231,8 @@ export function Login3DScene({ className }: Login3DSceneProps) {
           ))}
         </div>
         <p className="login-saas-3d-scroll-label">
-          {String(activeIndex + 1).padStart(2, '0')} / {String(SLIDE_COUNT).padStart(2, '0')} · {t(activeSlide.labelKey)}
+          {String(activeIndex + 1).padStart(2, '0')} / {String(SLIDE_COUNT).padStart(2, '0')} ·{' '}
+          {t(activeSlide.labelKey)}
         </p>
       </div>
 

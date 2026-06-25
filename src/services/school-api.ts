@@ -116,6 +116,8 @@ export async function fetchTeachers(params?: {
   return json as PaginatedResponse<Teacher>
 }
 
+export const fetchTeacher = (id: string) =>
+  apiFetch<Teacher>(`/api/teachers/${id}`)
 export const createTeacher = (data: TeacherCreateInput) =>
   apiFetch<Teacher>('/api/teachers', { method: 'POST', body: JSON.stringify(data) })
 export const updateTeacher = (id: string, data: TeacherUpdateInput) =>

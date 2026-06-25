@@ -48,8 +48,18 @@ export const metricAccents: Record<
   },
 }
 
+/** Light-mode main card shadow class — major cards only (BentoCard, detail headers, login) */
+export const mainCardShadow = 'main-card-shadow'
+
 export const glassPanelClass =
-  'backdrop-blur-xl bg-[hsl(var(--glass))] border border-[hsl(var(--glass-border))] shadow-[0_8px_32px_rgba(15,23,42,0.08)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.35)]'
+  'backdrop-blur-xl bg-[hsl(var(--glass))] border border-[hsl(var(--glass-border))] glass-panel'
+
+/** Theme-aware frosted backdrop — same blur(12px) in light & dark; scrim color only changes */
+export const modalOverlayClass = 'dialog-overlay'
+
+/** Radix overlay — blur + open/close fade animation */
+export const modalOverlayAnimatedClass =
+  'dialog-overlay fixed inset-0 z-50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0'
 
 export const bentoGridClass =
   'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 auto-rows-min'

@@ -5,6 +5,7 @@ import { WifiOff, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useOnlineStatus } from '@/hooks/use-online-status'
 import { cn } from '@/lib/utils'
+import { modalOverlayClass } from '@/utils/theme'
 
 export function OfflineOverlay() {
   const isOnline = useOnlineStatus()
@@ -37,7 +38,8 @@ export function OfflineOverlay() {
   return (
     <div
       className={cn(
-        'fixed inset-0 z-[9999] flex items-center justify-center bg-background/60 backdrop-blur-md transition-all duration-500 animate-in fade-in',
+        modalOverlayClass,
+        'fixed inset-0 z-[9999] flex items-center justify-center transition-all duration-500 animate-in fade-in',
         !isOnline ? 'opacity-100' : 'opacity-0 pointer-events-none'
       )}
     >

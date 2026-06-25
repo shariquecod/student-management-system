@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { MessageCircle, X, Send, Bot, User, Sparkles, Zap, Copy, ThumbsUp, ThumbsDown, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils'
+import { modalOverlayClass } from '@/utils/theme';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useRouter } from 'next/navigation';
 
@@ -317,9 +318,13 @@ export function AIChatbot({ isOpen, setIsOpen }: AIChatbotProps) {
 
       {/* Background Blur Overlay */}
       {isOpen && (
-        <div 
-          className="fixed inset-0 bg-black/20"
+        <div
+          className={cn(
+            modalOverlayClass,
+            'fixed inset-0 z-40 animate-in fade-in duration-300'
+          )}
           onClick={() => setIsOpen(false)}
+          aria-hidden
         />
       )}
 

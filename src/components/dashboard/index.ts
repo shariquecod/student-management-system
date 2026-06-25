@@ -1,0 +1,6 @@
+export { DashboardHero } from './dashboard-hero'
+export { DashboardEnrollmentChart } from './dashboard-enrollment-chart'
+export { DashboardActivityFeed } from './dashboard-activity-feed'
+export { DashboardAttendanceGauge } from './dashboard-attendance-gauge'
+export { DashboardQuickActions } from './dashboard-quick-actions'
+export { DashboardSkeleton } from './dashboard-skeleton'

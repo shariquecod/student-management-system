@@ -1,16 +1,27 @@
+import { loadEnvConfig } from '@next/env'
 import { NextRequest, NextResponse } from 'next/server'
 
 /** Browser calls use same-origin `/api/v1/*` — never the external backend URL directly. */
 export { SAME_ORIGIN_API_BASE } from '@/lib/api-config'
 
-/** Read at request time so Next.js does not inline an empty build-time value. */
+let envLoaded = false
+
+function ensureEnvLoaded() {
+  if (envLoaded) return
+  loadEnvConfig(process.cwd())
+  envLoaded = true
+}
+
+/** Read at request time — do not bake into next.config `env` (that can lock empty values). */
 export function getBackendBaseUrl(): string {
+  ensureEnvLoaded()
+
   const url =
-    process.env['NEXT_PUBLIC_API_BASE_URL'] ??
-    process.env['API_BASE_URL'] ??
+    process.env.API_BASE_URL?.trim() ||
+    process.env.NEXT_PUBLIC_API_BASE_URL?.trim() ||
     ''
 
-  return url.trim().replace(/\/$/, '')
+  return url.replace(/\/$/, '')
 }
 
 export function getProxyForwardHeaders(request: NextRequest): Record<string, string> {
@@ -57,7 +68,7 @@ export async function proxyToBackend({ method, path, body, headers = {} }: Proxy
       {
         success: false,
         message:
-          'Backend API URL is not configured. Set NEXT_PUBLIC_API_BASE_URL in .env.local and restart the dev server.',
+          'Backend API URL is not configured. Set API_BASE_URL or NEXT_PUBLIC_API_BASE_URL in .env.local and restart the dev server.',
       },
       { status: 500 }
     )

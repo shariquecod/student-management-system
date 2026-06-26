@@ -671,6 +671,18 @@
     backdrop-filter: blur(8px);
   }
 
+  .students-search .students-search-input {
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+
+  .students-search-btn,
+  .students-search-clear {
+    cursor: pointer;
+  }
+
   .students-search-input:focus-visible,
   .students-filter-select:focus-visible {
     border-color: hsl(var(--metric-students) / 0.5);
@@ -2440,6 +2452,12 @@
   }
 
   .students-form-input:focus-visible {
+    border-color: hsl(var(--metric-students) / 0.5);
+    box-shadow: 0 0 0 2px hsl(var(--metric-students) / 0.12);
+  }
+
+  .students-dob-picker[data-state='open'],
+  .students-dob-picker:focus-visible {
     border-color: hsl(var(--metric-students) / 0.5);
     box-shadow: 0 0 0 2px hsl(var(--metric-students) / 0.12);
   }
@@ -4756,14 +4774,14 @@ html[dir='rtl'] body {
   font-family: var(--font-urdu), var(--font-poppins), sans-serif;
 }
 
-html[dir='rtl'] .students-search .absolute {
-  left: auto;
-  right: 0.75rem;
+html[dir='rtl'] .students-search {
+  flex-direction: row-reverse;
 }
 
 html[dir='rtl'] .students-search-input {
-  padding-left: 0.75rem;
-  padding-right: 2.25rem;
+  padding-left: 0;
+  padding-right: 0;
+  text-align: right;
 }
 
 html[dir='rtl'] .admin-sidebar-nav-item,

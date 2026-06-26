@@ -19,7 +19,6 @@ import {
   LogOut,
   Sparkles,
 } from 'lucide-react'
-import { useRouter } from 'next/navigation'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -95,7 +94,6 @@ interface AdminSidebarProps {
 export function AdminSidebar({ mobile }: AdminSidebarProps) {
   const pathname = usePathname()
   const dispatch = useAppDispatch()
-  const router = useRouter()
   const { t } = useTranslation()
   const { sidebarCollapsed } = useAppSelector((s) => s.ui)
   const { user } = useAppSelector((s) => s.auth)
@@ -129,8 +127,9 @@ export function AdminSidebar({ mobile }: AdminSidebarProps) {
   }, [sidebarCollapsed, mobile])
 
   const handleLogout = async () => {
+    setLogoutOpen(false)
     await dispatch(logout())
-    router.push('/')
+    window.location.assign('/')
   }
 
   const handleNavClick = () => {

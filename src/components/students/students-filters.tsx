@@ -6,6 +6,9 @@ import {
   X,
   LayoutGrid,
   List,
+  ArrowDown,
+  ArrowRight,
+  LucideArrowBigRightDash,
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -25,13 +28,18 @@ import { getTranslatedClassName } from '@/i18n/student-display'
 
 interface StudentsFiltersProps {
   filters: StudentDirectoryFilters
+  searchInput: string
+  searchHighlight: boolean
+  onSearchInputChange: (value: string) => void
+  onSearchSubmit: () => void
+  onSearchClear: () => void
   onFilterChange: <K extends keyof StudentDirectoryFilters>(
     key: K,
     value: StudentDirectoryFilters[K]
   ) => void
   onClear: () => void
   activeFilterCount: number
-  classes: (SchoolClass & { studentCount?: number })[]
+  classes: (SchoolClass & { studentCount?: number })[] | { id: string; name: string }[]
   availableYears: number[]
   totalFiltered: number
   total: number
@@ -41,6 +49,11 @@ interface StudentsFiltersProps {
 
 export function StudentsFilters({
   filters,
+  searchInput,
+  searchHighlight,
+  onSearchInputChange,
+  onSearchSubmit,
+  onSearchClear,
   onFilterChange,
   onClear,
   activeFilterCount,
@@ -57,14 +70,59 @@ export function StudentsFilters({
     <div className="students-filters space-y-3">
       <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <div className="flex flex-1 flex-col gap-3 sm:flex-row">
-          <div className="students-search relative min-w-0 flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <div
+            className={cn(
+              'students-search flex min-w-0 flex-1 items-center overflow-hidden rounded-md border',
+              'border-[hsl(var(--glass-border))] bg-[hsl(var(--glass)/0.45)] backdrop-blur-sm',
+              'focus-within:border-[hsl(var(--metric-students)/0.5)]',
+              'focus-within:ring-2 focus-within:ring-[hsl(var(--metric-students)/0.15)]'
+            )}
+          >
+            <span
+              className="flex h-10 w-10 shrink-0 items-center justify-center text-muted-foreground pointer-events-none"
+              aria-hidden
+            >
+              <Search className="h-4 w-4" strokeWidth={2} />
+            </span>
             <Input
               placeholder={t('students.searchPlaceholder')}
-              className="students-search-input pl-9"
-              value={filters.search}
-              onChange={(e) => onFilterChange('search', e.target.value)}
+              className="students-search-input h-10 flex-1 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+              value={searchInput}
+              onChange={(e) => onSearchInputChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  onSearchSubmit()
+                }
+              }}
             />
+
+            {searchInput.length > 0 && (
+              <button
+                type="button"
+                onClick={onSearchClear}
+                className="students-search-clear flex h-10 w-10 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
+                aria-label={t('students.clearSearch')}
+              >
+                <X className="h-4 w-4" strokeWidth={2} />
+              </button>
+            )}
+            {searchInput.length > 0 && (
+              <button
+                type="button"
+                onClick={onSearchSubmit}
+                className={cn(
+                  'students-search-btn flex h-8 w-8 rounded-md mr-1 shrink-0 items-center justify-center transition-colors hover:border-2 hover:border-metric-students',
+                  searchHighlight
+                    ? 'text-[hsl(var(--metric-students))]'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+                aria-label={t('students.searchAction')}
+              >
+                <ArrowRight className="h-6 w-6" strokeWidth={2} />
+              </button>
+            )}
+
           </div>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
             <Select value={filters.classId} onValueChange={(v) => onFilterChange('classId', v)}>

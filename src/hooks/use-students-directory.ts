@@ -1,14 +1,14 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { Student, SchoolClass } from '@/types'
+import type { Student } from '@/types'
 import type {
   StudentDirectoryFilters,
   StudentSortDirection,
   StudentSortField,
 } from '@/types/student-page'
 import { computeStudentPageStats } from '@/lib/student-stats'
-import { fetchStudents, fetchClasses } from '@/services/school-api'
+import { fetchStudentsList } from '@/services/student-api'
 
 const PAGE_SIZE = 8
 
@@ -47,65 +47,76 @@ function compareStudents(
 }
 
 export function useStudentsDirectory() {
-  const [allStudents, setAllStudents] = useState<Student[]>([])
-  const [classes, setClasses] = useState<(SchoolClass & { studentCount?: number })[]>([])
+  const [students, setStudents] = useState<Student[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [filters, setFilters] = useState<StudentDirectoryFilters>(defaultFilters)
+  const [searchInput, setSearchInput] = useState('')
   const [sortField, setSortField] = useState<StudentSortField>('name')
   const [sortDirection, setSortDirection] = useState<StudentSortDirection>('asc')
   const [page, setPage] = useState(1)
 
   const load = useCallback(async () => {
     setLoading(true)
+    setError(null)
     try {
-      const [studentsRes, classesRes] = await Promise.all([
-        fetchStudents({ limit: 200 }),
-        fetchClasses({ limit: 50 }),
-      ])
-      setAllStudents(studentsRes.data)
-      setClasses(classesRes.data)
+      const res = await fetchStudentsList({
+        page: 1,
+        limit: 200,
+        search: filters.search.trim() || undefined,
+        classId: filters.classId !== 'all' ? filters.classId : undefined,
+        status: filters.status !== 'all' ? filters.status : undefined,
+        year: filters.year !== 'all' ? Number(filters.year) : undefined,
+      })
+      setStudents(res.data)
+    } catch (err) {
+      setStudents([])
+      setError(err instanceof Error ? err.message : 'Request failed')
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [filters])
 
   useEffect(() => {
     load()
   }, [load])
 
-  const stats = useMemo(() => computeStudentPageStats(allStudents), [allStudents])
+  const applySearch = useCallback(() => {
+    const next = searchInput.trim()
+    setFilters((prev) => (prev.search === next ? prev : { ...prev, search: next }))
+    setPage(1)
+  }, [searchInput])
 
-  const filteredStudents = useMemo(() => {
-    const search = filters.search.trim().toLowerCase()
-    return allStudents
-      .filter((student) => {
-        if (filters.classId !== 'all' && student.classId !== filters.classId) return false
-        if (filters.status !== 'all' && student.status !== filters.status) return false
-        if (filters.year !== 'all' && student.year !== Number(filters.year)) return false
-        if (!search) return true
-        const haystack = [
-          student.firstName,
-          student.lastName,
-          student.firstNameUr,
-          student.lastNameUr,
-          student.rollNumber,
-          student.email,
-          student.className,
-        ]
-          .join(' ')
-          .toLowerCase()
-        return haystack.includes(search)
-      })
-      .sort((a, b) => compareStudents(a, b, sortField, sortDirection))
-  }, [allStudents, filters, sortField, sortDirection])
+  const clearSearch = useCallback(() => {
+    setSearchInput('')
+    setFilters((prev) => (prev.search === '' ? prev : { ...prev, search: '' }))
+    setPage(1)
+  }, [])
 
-  const totalPages = Math.max(1, Math.ceil(filteredStudents.length / PAGE_SIZE))
+  const classes = useMemo(() => {
+    const map = new Map<string, { id: string; name: string }>()
+    for (const student of students) {
+      if (student.classId && student.className && !map.has(student.classId)) {
+        map.set(student.classId, { id: student.classId, name: student.className })
+      }
+    }
+    return Array.from(map.values())
+  }, [students])
+
+  const stats = useMemo(() => computeStudentPageStats(students), [students])
+
+  const sortedStudents = useMemo(
+    () => [...students].sort((a, b) => compareStudents(a, b, sortField, sortDirection)),
+    [students, sortField, sortDirection]
+  )
+
+  const totalPages = Math.max(1, Math.ceil(sortedStudents.length / PAGE_SIZE))
   const safePage = Math.min(page, totalPages)
 
   const paginatedStudents = useMemo(() => {
     const start = (safePage - 1) * PAGE_SIZE
-    return filteredStudents.slice(start, start + PAGE_SIZE)
-  }, [filteredStudents, safePage])
+    return sortedStudents.slice(start, start + PAGE_SIZE)
+  }, [sortedStudents, safePage])
 
   const activeFilterCount = useMemo(() => {
     let count = 0
@@ -125,6 +136,7 @@ export function useStudentsDirectory() {
   )
 
   const clearFilters = useCallback(() => {
+    setSearchInput('')
     setFilters(defaultFilters)
     setPage(1)
   }, [])
@@ -142,20 +154,27 @@ export function useStudentsDirectory() {
   }, [])
 
   const availableYears = useMemo(
-    () => Array.from(new Set(allStudents.map((s) => s.year))).sort((a, b) => b - a),
-    [allStudents]
+    () => Array.from(new Set(students.map((s) => s.year))).sort((a, b) => b - a),
+    [students]
   )
 
-  const initialLoading = loading && allStudents.length === 0
-  const refreshing = loading && allStudents.length > 0
+  const initialLoading = loading && students.length === 0 && !error
+  const refreshing = loading && students.length > 0
+  const searchHighlight = searchInput.trim().length > 0
 
   return {
-    allStudents,
+    students,
     classes,
     loading,
+    error,
     initialLoading,
     refreshing,
     filters,
+    searchInput,
+    setSearchInput,
+    applySearch,
+    clearSearch,
+    searchHighlight,
     updateFilter,
     clearFilters,
     activeFilterCount,
@@ -163,13 +182,12 @@ export function useStudentsDirectory() {
     sortDirection,
     toggleSort,
     stats,
-    filteredStudents,
     paginatedStudents,
     page: safePage,
     setPage,
     totalPages,
     pageSize: PAGE_SIZE,
-    totalFiltered: filteredStudents.length,
+    totalFiltered: sortedStudents.length,
     availableYears,
     reload: load,
   }

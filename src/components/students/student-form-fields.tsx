@@ -1,5 +1,6 @@
 'use client'
 
+import { format } from 'date-fns'
 import type { UseFormReturn } from 'react-hook-form'
 import {
   FormControl,
@@ -10,6 +11,7 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { DatePicker } from '@/components/ui/date-picker'
 import {
   Select,
   SelectContent,
@@ -19,8 +21,17 @@ import {
 } from '@/components/ui/select'
 import type { SchoolClass } from '@/types'
 import type { StudentFormValues } from '@/lib/student-form-schema'
+import { getStudentDobMinDate, getStudentDobMaxDate } from '@/lib/student-form-schema'
 import { useTranslation } from '@/i18n/use-translation'
 import { getTranslatedClassName } from '@/i18n/student-display'
+
+function parseDateString(value: string): Date | undefined {
+  if (!value) return undefined
+  const [y, m, d] = value.split('-').map(Number)
+  if (!y || !m || !d) return undefined
+  const date = new Date(y, m - 1, d)
+  return Number.isNaN(date.getTime()) ? undefined : date
+}
 
 interface StudentFormFieldsProps {
   form: UseFormReturn<StudentFormValues>
@@ -81,7 +92,16 @@ export function StudentPersonalFields({ form, classes: _classes }: StudentFormFi
             <FormItem>
               <FormLabel>{t('students.fields.dateOfBirth')}</FormLabel>
               <FormControl>
-                <Input type="date" className="students-form-input" {...field} />
+                <DatePicker
+                  value={parseDateString(field.value)}
+                  onChange={(date) =>
+                    field.onChange(date ? format(date, 'yyyy-MM-dd') : '')
+                  }
+                  minDate={getStudentDobMinDate()}
+                  maxDate={getStudentDobMaxDate()}
+                  placeholder={t('students.fields.selectDateOfBirth')}
+                  className="students-form-input students-dob-picker h-10 w-full shadow-none hover:bg-[hsl(var(--muted)/0.35)]"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

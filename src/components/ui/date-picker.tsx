@@ -339,11 +339,14 @@ export const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(
               ) : (
                 <span>{placeholder}</span>
               )}
-              <CalendarIcon className="h-4 w-4 text-primary" />
+              <CalendarIcon className="h-4 w-4 shrink-0 text-[hsl(var(--metric-students))]" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <div className="p-4 bg-card border rounded-lg shadow-lg">
+          <PopoverContent
+            className="w-auto border-[hsl(var(--glass-border))] bg-[hsl(var(--card))] p-0 shadow-lg"
+            align="start"
+          >
+            <div className="rounded-lg p-4">
               {/* Enhanced navigation header */}
               <div className="flex items-center justify-between mb-4 pb-3 border-b border-border/50">
                 {/* Left navigation group */}
@@ -451,10 +454,13 @@ export const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(
                   }}
                   initialFocus
                   modifiersStyles={{
-                    today: { backgroundColor: '#22688f', color: 'white' },
+                    today: {
+                      backgroundColor: 'hsl(var(--metric-students) / 0.85)',
+                      color: 'hsl(var(--primary-foreground))',
+                    },
                     selected: {
-                      backgroundColor: '#06b6d4',
-                      color: 'white',
+                      backgroundColor: 'hsl(var(--primary))',
+                      color: 'hsl(var(--primary-foreground))',
                       borderRadius: '9999px',
                     },
                   }}
@@ -473,9 +479,9 @@ export const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(
                     cell: 'text-center p-0 relative flex items-center justify-center focus-within:relative focus-within:z-20 h-[36px]',
                     day: 'h-[36px] w-[36px] p-0 font-normal aria-selected:opacity-100 flex items-center justify-center hover:bg-muted/70',
                     day_selected:
-                      'bg-[#06b6d4] text-white hover:bg-[#06b6d4] hover:text-white focus:bg-[#06b6d4] focus:text-white rounded-full w-[36px] h-[36px] flex items-center justify-center',
+                      'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground rounded-full w-[36px] h-[36px] flex items-center justify-center',
                     day_today:
-                      'bg-[#22688f] text-white rounded-full w-[36px] h-[36px] flex items-center justify-center',
+                      'bg-[hsl(var(--metric-students)/0.85)] text-primary-foreground rounded-full w-[36px] h-[36px] flex items-center justify-center',
                     day_outside: 'text-muted-foreground opacity-50',
                     day_disabled: 'text-muted-foreground opacity-50',
                     day_range_middle:
@@ -501,10 +507,13 @@ export const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(
                   }}
                   initialFocus
                   modifiersStyles={{
-                    today: { backgroundColor: '#22688f', color: 'white' },
+                    today: {
+                      backgroundColor: 'hsl(var(--metric-students) / 0.85)',
+                      color: 'hsl(var(--primary-foreground))',
+                    },
                     selected: {
-                      backgroundColor: '#06b6d4',
-                      color: 'white',
+                      backgroundColor: 'hsl(var(--primary))',
+                      color: 'hsl(var(--primary-foreground))',
                       borderRadius: '9999px',
                     },
                   }}
@@ -523,9 +532,9 @@ export const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(
                     cell: 'text-center p-0 relative flex items-center justify-center focus-within:relative focus-within:z-20 h-[36px]',
                     day: 'h-[36px] w-[36px] p-0 font-normal aria-selected:opacity-100 flex items-center justify-center hover:bg-muted/70',
                     day_selected:
-                      'bg-[#06b6d4] text-white hover:bg-[#06b6d4] hover:text-white focus:bg-[#06b6d4] focus:text-white rounded-full w-[36px] h-[36px] flex items-center justify-center',
+                      'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground rounded-full w-[36px] h-[36px] flex items-center justify-center',
                     day_today:
-                      'bg-[#22688f] text-white rounded-full w-[36px] h-[36px] flex items-center justify-center',
+                      'bg-[hsl(var(--metric-students)/0.85)] text-primary-foreground rounded-full w-[36px] h-[36px] flex items-center justify-center',
                     day_outside: 'text-muted-foreground opacity-50',
                     day_disabled: 'text-muted-foreground opacity-50',
                     day_range_middle:

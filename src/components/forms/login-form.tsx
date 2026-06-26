@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -72,16 +73,11 @@ export function LoginForm({ variant = 'default' }: LoginFormProps) {
     const result = await dispatch(
       login({ email: values.email, password: values.password, rememberMe: values.rememberMe })
     )
-    setSubmitting(false)
     if (login.fulfilled.match(result)) {
-      const params = new URLSearchParams(window.location.search)
-      const redirect = params.get('redirect')
-      const destination =
-        redirect && redirect.startsWith('/') && !redirect.startsWith('//')
-          ? redirect
-          : '/dashboard'
-      window.location.assign(destination)
+      window.location.assign('/dashboard')
+      return
     }
+    setSubmitting(false)
   }
 
   const busy = submitting
@@ -110,7 +106,7 @@ export function LoginForm({ variant = 'default' }: LoginFormProps) {
                       <Mail className="login-card-field-icon" aria-hidden />
                       <Input
                         type="email"
-                        placeholder="admin@school.edu"
+                        placeholder={t('auth.emailPlaceholder')}
                         className="login-card-input"
                         autoComplete="email"
                         {...field}
@@ -201,40 +197,12 @@ export function LoginForm({ variant = 'default' }: LoginFormProps) {
           </form>
         </Form>
 
-        <div className="login-card-or-divider">
-          <span>{t('common.tryDemoAccount')}</span>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2.5">
-          <button
-            type="button"
-            className="login-card-demo-chip"
-            onClick={() => {
-              form.setValue('email', 'admin@school.edu', { shouldValidate: true })
-              form.setValue('password', 'admin123', { shouldValidate: true })
-            }}
-          >
-            <span className="login-card-demo-dot login-card-demo-dot-admin" />
-            <span className="block text-left">
-              <span className="login-card-demo-chip-title">{t('common.admin')}</span>
-              <span className="login-card-demo-chip-subtitle">{t('common.fullAccess')}</span>
-            </span>
-          </button>
-          <button
-            type="button"
-            className="login-card-demo-chip"
-            onClick={() => {
-              form.setValue('email', 'staff@school.edu', { shouldValidate: true })
-              form.setValue('password', 'staff123', { shouldValidate: true })
-            }}
-          >
-            <span className="login-card-demo-dot login-card-demo-dot-staff" />
-            <span className="block text-left">
-              <span className="login-card-demo-chip-title">{t('roles.staff')}</span>
-              <span className="login-card-demo-chip-subtitle">{t('common.limitedAccess')}</span>
-            </span>
-          </button>
-        </div>
+        <p className="text-center text-sm text-muted-foreground">
+          {t('auth.noAccount')}{' '}
+          <Link href="/register" className="login-card-link font-medium">
+            {t('auth.createAccount')}
+          </Link>
+        </p>
       </div>
     )
   }
@@ -264,7 +232,7 @@ export function LoginForm({ variant = 'default' }: LoginFormProps) {
                 <FormControl>
                   <Input
                     type="email"
-                    placeholder="admin@school.edu"
+                    placeholder={t('auth.emailPlaceholder')}
                     className="h-11"
                     autoComplete="email"
                     {...field}
@@ -284,7 +252,7 @@ export function LoginForm({ variant = 'default' }: LoginFormProps) {
                   <div className="relative">
                     <Input
                       type={showPassword ? 'text' : 'password'}
-                      placeholder="Enter your password"
+                      placeholder={t('auth.password')}
                       className="h-11 pr-10"
                       autoComplete="current-password"
                       {...field}
@@ -293,7 +261,7 @@ export function LoginForm({ variant = 'default' }: LoginFormProps) {
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
-                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
@@ -323,13 +291,9 @@ export function LoginForm({ variant = 'default' }: LoginFormProps) {
             >
               {t('auth.forgotPassword')}
             </button>
-            <button
-              type="button"
-              className="text-muted-foreground transition-colors hover:text-foreground"
-              onClick={() => alert(t('common.contactSupportEmail'))}
-            >
-              {t('common.contactSupport')}
-            </button>
+            <Link href="/register" className="text-muted-foreground transition-colors hover:text-foreground">
+              {t('auth.createAccount')}
+            </Link>
           </div>
           <Button type="submit" className="h-11 w-full" disabled={busy}>
             {busy ? (
@@ -343,7 +307,6 @@ export function LoginForm({ variant = 'default' }: LoginFormProps) {
           </Button>
         </form>
       </Form>
-      <p className="text-center text-xs text-muted-foreground">{t('common.demoCredentials')}</p>
     </div>
   )
 }

@@ -1,14 +1,14 @@
 'use client'
 
-import { LoginForm } from '@/components/forms'
-import { LoginCard } from './login-card'
+import { RegisterForm } from '@/components/forms'
+import { RegisterCard } from './register-card'
 import { LanguageSwitcher } from '@/components/language-switcher'
 import { ModeToggle } from '@/components/mode-toggle'
 import { AuthDeferredShowcase } from './auth-deferred-showcase'
 import { LayoutGrid } from 'lucide-react'
 import { useTranslation } from '@/i18n/use-translation'
 
-export function LoginExperience() {
+export function RegisterExperience() {
   const { t } = useTranslation()
 
   return (
@@ -33,9 +33,9 @@ export function LoginExperience() {
         <AuthDeferredShowcase />
 
         <div className="login-panel-arrive-right flex w-full justify-center">
-          <LoginCard>
-            <LoginForm variant="immersive" />
-          </LoginCard>
+          <RegisterCard>
+            <RegisterForm variant="immersive" />
+          </RegisterCard>
         </div>
       </div>
 

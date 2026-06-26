@@ -22,7 +22,8 @@ import {
   studentFormValuesToPayload,
   type StudentFormValues,
 } from '@/lib/student-form-schema'
-import { createStudent, fetchClasses } from '@/services/school-api'
+import { fetchClasses } from '@/services/school-api'
+import { createStudentApi } from '@/services/student-api'
 import type { SchoolClass } from '@/types'
 import { toast } from 'sonner'
 import { useTranslation } from '@/i18n/use-translation'
@@ -52,9 +53,9 @@ export function StudentCreateForm() {
   const onSubmit = async (values: StudentFormValues) => {
     setSubmitting(true)
     try {
-      const student = await createStudent(studentFormValuesToPayload(values))
+      await createStudentApi(studentFormValuesToPayload(values))
       toast.success(t('students.created'))
-      router.push(`/students/${student.id}`)
+      router.push('/students')
     } catch {
       toast.error(t('students.saveFailed'))
     } finally {

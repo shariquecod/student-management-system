@@ -6,7 +6,7 @@ export async function POST(request: NextRequest) {
   const body = await request.json()
   const backendResponse = await proxyToBackend({
     method: 'POST',
-    path: endpoints.auth.login,
+    path: endpoints.auth.register,
     body,
   })
 

@@ -12,6 +12,8 @@ export * from './card';
 export * from './carousel';
 export * from './chart';
 export * from './checkbox';
+export * from './date-picker';
+export * from './date-of-birth-picker';
 export * from './collapsible';
 export * from './command';
 export * from './context-menu';

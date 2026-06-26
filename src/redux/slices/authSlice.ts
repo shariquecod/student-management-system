@@ -1,5 +1,12 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit'
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import type { AdminUser } from '@/types'
+import { authService } from '@/services/auth-services'
+import {
+  clearAuthSession,
+  mapAuthUserToAdminUser,
+  persistAuthSession,
+  readStoredAuthSession,
+} from '@/lib/auth-session'
 
 interface AuthState {
   user: AdminUser | null
@@ -17,6 +24,10 @@ const initialState: AuthState = {
   error: null,
 }
 
+function resolveAuthError(response: { message?: string; error?: string } | null | undefined, fallback: string) {
+  return response?.message ?? response?.error ?? fallback
+}
+
 export const login = createAsyncThunk(
   'auth/login',
   async (
@@ -24,20 +35,43 @@ export const login = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ email, password, rememberMe }),
-      })
-      const json = await res.json()
-      if (!res.ok) return rejectWithValue(json.error ?? 'Login failed')
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('authToken', json.data.token)
-        localStorage.setItem('user', JSON.stringify(json.data.user))
-        if (rememberMe) localStorage.setItem('rememberMe', 'true')
+      const response = await authService.login(email, password)
+
+      if (!response?.success || !response.data?.accessToken) {
+        return rejectWithValue(resolveAuthError(response, 'Login failed'))
       }
-      return json.data as { token: string; user: AdminUser }
+
+      persistAuthSession(response.data, rememberMe)
+
+      return {
+        token: response.data.accessToken,
+        user: mapAuthUserToAdminUser(response.data),
+      }
+    } catch {
+      return rejectWithValue('An unexpected error occurred')
+    }
+  }
+)
+
+export const register = createAsyncThunk(
+  'auth/register',
+  async (
+    { fullName, email, password }: { fullName: string; email: string; password: string },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await authService.register(fullName, email, password)
+
+      if (!response?.success || !response.data?.accessToken) {
+        return rejectWithValue(resolveAuthError(response, 'Registration failed'))
+      }
+
+      persistAuthSession(response.data, true)
+
+      return {
+        token: response.data.accessToken,
+        user: mapAuthUserToAdminUser(response.data),
+      }
     } catch {
       return rejectWithValue('An unexpected error occurred')
     }
@@ -46,34 +80,16 @@ export const login = createAsyncThunk(
 
 export const initAuth = createAsyncThunk('auth/init', async (_, { rejectWithValue }) => {
   try {
-    if (typeof window === 'undefined') return null
-
-    const res = await fetch('/api/auth/me', { credentials: 'include' })
-    if (res.ok) {
-      const json = await res.json()
-      const user = json.data as AdminUser
-      const token = localStorage.getItem('authToken') ?? 'session'
-      localStorage.setItem('authToken', token)
-      localStorage.setItem('user', JSON.stringify(user))
-      return { token, user }
-    }
-
-    localStorage.removeItem('authToken')
-    localStorage.removeItem('user')
-    localStorage.removeItem('rememberMe')
-    return null
+    const session = readStoredAuthSession()
+    return session
   } catch {
+    clearAuthSession()
     return rejectWithValue('Failed to restore session')
   }
 })
 
 export const logout = createAsyncThunk('auth/logout', async () => {
-  await fetch('/api/auth/logout', { method: 'POST' })
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem('authToken')
-    localStorage.removeItem('user')
-    localStorage.removeItem('rememberMe')
-  }
+  await authService.logout()
 })
 
 const authSlice = createSlice({
@@ -87,7 +103,6 @@ const authSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(login.pending, (state) => {
-        state.isLoading = true
         state.error = null
       })
       .addCase(login.fulfilled, (state, action) => {
@@ -97,6 +112,19 @@ const authSlice = createSlice({
         state.user = action.payload.user
       })
       .addCase(login.rejected, (state, action) => {
+        state.isLoading = false
+        state.error = action.payload as string
+      })
+      .addCase(register.pending, (state) => {
+        state.error = null
+      })
+      .addCase(register.fulfilled, (state, action) => {
+        state.isLoading = false
+        state.isAuthenticated = true
+        state.token = action.payload.token
+        state.user = action.payload.user
+      })
+      .addCase(register.rejected, (state, action) => {
         state.isLoading = false
         state.error = action.payload as string
       })
@@ -119,12 +147,16 @@ const authSlice = createSlice({
       })
       .addCase(initAuth.rejected, (state) => {
         state.isLoading = false
+        state.isAuthenticated = false
+        state.token = null
+        state.user = null
       })
       .addCase(logout.fulfilled, (state) => {
         state.user = null
         state.token = null
         state.isAuthenticated = false
         state.isLoading = false
+        state.error = null
       })
   },
 })

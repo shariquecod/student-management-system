@@ -93,8 +93,6 @@ export const createStudent = (data: StudentCreateInput) =>
   apiFetch<Student>('/api/students', { method: 'POST', body: JSON.stringify(data) })
 export const updateStudent = (id: string, data: StudentUpdateInput) =>
   apiFetch<Student>(`/api/students/${id}`, { method: 'PUT', body: JSON.stringify(data) })
-export const deleteStudent = (id: string) =>
-  apiFetch<{ success: boolean }>(`/api/students/${id}`, { method: 'DELETE' })
 
 // Teachers
 export async function fetchTeachers(params?: {

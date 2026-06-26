@@ -9,6 +9,23 @@ export interface AdminUser {
   createdAt: string
 }
 
+export interface AuthTokenData {
+  accessToken: string
+  refreshToken: string
+  email: string
+  fullName: string
+  tokenType: string
+}
+
+export interface AuthApiResponse {
+  timestamp?: string
+  status?: number
+  message?: string
+  data?: AuthTokenData
+  success: boolean
+  error?: string
+}
+
 export interface AuthSession {
   token: string
   user: AdminUser
@@ -19,4 +36,10 @@ export interface LoginCredentials {
   email: string
   password: string
   rememberMe?: boolean
+}
+
+export interface RegisterCredentials {
+  fullName: string
+  email: string
+  password: string
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   GraduationCap,
@@ -17,7 +17,7 @@ import {
   StudentsStatSkeleton,
 } from '@/components/students'
 import { useStudentsDirectory } from '@/hooks/use-students-directory'
-import { deleteStudent } from '@/services/school-api'
+import { deleteStudentApi } from '@/services/student-api'
 import type { Student } from '@/types'
 import { toast } from 'sonner'
 import { useTranslation } from '@/i18n/use-translation'
@@ -29,7 +29,13 @@ export default function StudentsPage() {
     classes,
     initialLoading,
     refreshing,
+    error,
     filters,
+    searchInput,
+    setSearchInput,
+    applySearch,
+    clearSearch,
+    searchHighlight,
     updateFilter,
     clearFilters,
     activeFilterCount,
@@ -51,6 +57,10 @@ export default function StudentsPage() {
   const [deleting, setDeleting] = useState(false)
   const [viewMode, setViewMode] = useState<'table' | 'compact'>('table')
 
+  useEffect(() => {
+    if (error) toast.error(error)
+  }, [error])
+
   const openView = (student: Student) => {
     router.push(`/students/${student.id}`)
   }
@@ -63,12 +73,12 @@ export default function StudentsPage() {
     if (!deleteTarget) return
     setDeleting(true)
     try {
-      await deleteStudent(deleteTarget.id)
+      await deleteStudentApi(deleteTarget.id)
       toast.success(t('students.deleted'))
       setDeleteTarget(null)
       reload()
-    } catch {
-      toast.error(t('students.deleteFailedShort'))
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('students.deleteFailedShort'))
       throw new Error('delete failed')
     } finally {
       setDeleting(false)
@@ -134,6 +144,11 @@ export default function StudentsPage() {
         <BentoCard colSpan={12} delay={300}>
           <StudentsFilters
             filters={filters}
+            searchInput={searchInput}
+            searchHighlight={searchHighlight}
+            onSearchInputChange={setSearchInput}
+            onSearchSubmit={applySearch}
+            onSearchClear={clearSearch}
             onFilterChange={updateFilter}
             onClear={clearFilters}
             activeFilterCount={activeFilterCount}

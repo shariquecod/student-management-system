@@ -20,7 +20,7 @@ import {
   getStudentClassFromLabel,
   buildStudentNotes,
   slugifyStudentEmail,
-} from '@/data/students-page'
+} from './student-seed'
 import { generateId } from './utils'
 
 // Mock credentials: admin@school.edu / admin123 | staff@school.edu / staff123

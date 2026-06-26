@@ -1,6 +1,27 @@
 import { z } from 'zod'
 import type { Student, SchoolClass } from '@/types'
 
+const MIN_STUDENT_AGE_YEARS = 4
+const MAX_STUDENT_AGE_YEARS = 100
+
+export function getStudentDobMinDate(): Date {
+  return new Date(new Date().getFullYear() - MAX_STUDENT_AGE_YEARS, 0, 1)
+}
+
+export function getStudentDobMaxDate(): Date {
+  const d = new Date()
+  d.setFullYear(d.getFullYear() - MIN_STUDENT_AGE_YEARS)
+  d.setHours(23, 59, 59, 999)
+  return d
+}
+
+function parseDobString(value: string): Date | undefined {
+  const [y, m, day] = value.split('-').map(Number)
+  if (!y || !m || !day) return undefined
+  const date = new Date(y, m - 1, day)
+  return Number.isNaN(date.getTime()) ? undefined : date
+}
+
 export const studentFormSchema = z.object({
   firstName: z.string().min(1, 'Required'),
   lastName: z.string().min(1, 'Required'),
@@ -10,7 +31,14 @@ export const studentFormSchema = z.object({
   classId: z.string().min(1, 'Select a class'),
   year: z.number().min(2000),
   status: z.enum(['active', 'inactive', 'graduated']),
-  dateOfBirth: z.string().min(1, 'Required'),
+  dateOfBirth: z
+    .string()
+    .min(1, 'Required')
+    .refine((value) => {
+      const date = parseDobString(value)
+      if (!date) return false
+      return date >= getStudentDobMinDate() && date <= getStudentDobMaxDate()
+    }, `Student must be at least ${MIN_STUDENT_AGE_YEARS} years old`),
   address: z.string().min(1, 'Required'),
   guardianName: z.string().min(1, 'Required'),
   guardianPhone: z.string().min(1, 'Required'),

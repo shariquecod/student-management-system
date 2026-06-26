@@ -8,4 +8,6 @@
 
 3. check error using npx tsc - At last - till all errors resolved
 
-4. First check all  comnponent and use it .
+4. First check all comnponent and use it .
+
+5. when ever you add page make sure to add export in index file

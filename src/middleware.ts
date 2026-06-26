@@ -12,20 +12,23 @@ const protectedPaths = [
   '/settings',
 ]
 
+const authPaths = ['/', '/register']
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const isProtected = protectedPaths.some(
     (p) => pathname === p || pathname.startsWith(`${p}/`)
   )
   const token = request.cookies.get('authToken')?.value
+  const hasValidToken = Boolean(token && token.trim().length > 0)
 
-  if (isProtected && !token) {
+  if (isProtected && !hasValidToken) {
     const loginUrl = new URL('/', request.url)
     loginUrl.searchParams.set('redirect', pathname)
     return NextResponse.redirect(loginUrl)
   }
 
-  if (pathname === '/' && token) {
+  if (authPaths.includes(pathname) && hasValidToken) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
@@ -35,6 +38,7 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     '/',
+    '/register',
     '/dashboard/:path*',
     '/students/:path*',
     '/teachers/:path*',

@@ -8,7 +8,9 @@ const clearAuthData = () => {
   if (typeof window !== 'undefined') {
     localStorage.removeItem('token');
     localStorage.removeItem('authToken');
+    localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
+    localStorage.removeItem('rememberMe');
     // Clear auth cookie
     document.cookie = 'authToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
   }
@@ -208,7 +210,7 @@ const createApiClient = (options?: ApiClientOptions): ApiClientReturn => {
         }
 
         if (axiosError.response?.status === 401) {
-          if (config.url.includes('/auth/login') || config.url.includes('/auth/signin')) {
+          if (config.url.includes('/auth/login') || config.url.includes('/auth/signin') || config.url.includes('/auth/register')) {
             return {
               success: false,
               error: 'INVALID_CREDENTIALS',

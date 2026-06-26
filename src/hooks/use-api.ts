@@ -1,5 +1,5 @@
 import axios, { AxiosResponse, AxiosError } from 'axios';
-import { API_BASE_URL } from '@/services/api';
+import { SAME_ORIGIN_API_BASE } from '@/lib/api-config';
 import { authService } from '@/services/auth-services';
 import { toast } from 'sonner';
 
@@ -81,7 +81,9 @@ const createApiClient = (options?: ApiClientOptions): ApiClientReturn => {
 
         // Determine base URL to use
         const isAbsoluteUrl = config.url.startsWith('http://') || config.url.startsWith('https://');
-        const baseUrl = isAbsoluteUrl ? '' : (config.baseUrl !== undefined ? config.baseUrl : (options?.baseUrl || API_BASE_URL));
+        const baseUrl = isAbsoluteUrl
+          ? ''
+          : (config.baseUrl !== undefined ? config.baseUrl : (options?.baseUrl ?? SAME_ORIGIN_API_BASE));
 
         // Add auth token if available
         if (typeof window !== 'undefined') {

@@ -1,4 +1,7 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+
+/** Browser calls use same-origin `/api/v1/*` — never the external backend URL directly. */
+export { SAME_ORIGIN_API_BASE } from '@/lib/api-config'
 
 /** Read at request time so Next.js does not inline an empty build-time value. */
 export function getBackendBaseUrl(): string {
@@ -8,6 +11,35 @@ export function getBackendBaseUrl(): string {
     ''
 
   return url.trim().replace(/\/$/, '')
+}
+
+export function getProxyForwardHeaders(request: NextRequest): Record<string, string> {
+  const headers: Record<string, string> = {}
+  const authorization = request.headers.get('authorization')
+
+  if (authorization) {
+    headers.Authorization = authorization
+    return headers
+  }
+
+  const cookieToken = request.cookies.get('authToken')?.value
+  if (cookieToken) {
+    headers.Authorization = `Bearer ${cookieToken}`
+  }
+
+  return headers
+}
+
+export async function getProxyRequestBody(request: NextRequest): Promise<unknown> {
+  if (request.method === 'GET' || request.method === 'HEAD' || request.method === 'DELETE') {
+    return undefined
+  }
+
+  try {
+    return await request.json()
+  } catch {
+    return undefined
+  }
 }
 
 interface ProxyOptions {
@@ -31,8 +63,10 @@ export async function proxyToBackend({ method, path, body, headers = {} }: Proxy
     )
   }
 
+  const targetUrl = `${backendBaseUrl}${path.startsWith('/') ? path : `/${path}`}`
+
   try {
-    const response = await fetch(`${backendBaseUrl}${path}`, {
+    const response = await fetch(targetUrl, {
       method,
       headers: {
         Accept: 'application/json',

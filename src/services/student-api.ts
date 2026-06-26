@@ -1,4 +1,5 @@
 import { apiClient } from '@/hooks/use-api'
+import { SAME_ORIGIN_API_BASE } from '@/lib/api-config'
 import { endpoints } from '@/services/api'
 import type { PaginatedResponse, Student, StudentCreateInput } from '@/types'
 
@@ -32,7 +33,12 @@ export async function fetchStudentsList(
   if (params?.status) queryParams.status = params.status
   if (params?.year) queryParams.year = params.year
 
-  const response = await apiClient.get(endpoints.student.list, queryParams)
+  const response = await apiClient.get(
+    endpoints.student.list,
+    queryParams,
+    undefined,
+    SAME_ORIGIN_API_BASE
+  )
   throwIfApiError(response, 'Request failed')
 
   const result = response as PaginatedResponse<Student>
@@ -49,7 +55,12 @@ export async function fetchStudentsList(
 
 /** POST /api/v1/students */
 export async function createStudentApi(data: StudentCreateInput): Promise<Student> {
-  const response = await apiClient.post(endpoints.student.create, data)
+  const response = await apiClient.post(
+    endpoints.student.create,
+    data,
+    undefined,
+    SAME_ORIGIN_API_BASE
+  )
   throwIfApiError(response, 'Failed to create student')
 
   const result = response as { data: Student }
@@ -61,6 +72,10 @@ export async function createStudentApi(data: StudentCreateInput): Promise<Studen
 
 /** DELETE /api/v1/students/:id */
 export async function deleteStudentApi(id: string): Promise<void> {
-  const response = await apiClient.delete(endpoints.student.delete({ id }))
+  const response = await apiClient.delete(
+    endpoints.student.delete({ id }),
+    undefined,
+    SAME_ORIGIN_API_BASE
+  )
   throwIfApiError(response, 'Failed to delete student')
 }

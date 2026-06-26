@@ -1,4 +1,5 @@
 import { apiClient } from '@/hooks/use-api'
+import { SAME_ORIGIN_API_BASE } from '@/lib/api-config'
 import { clearAuthSession } from '@/lib/auth-session'
 import type { AuthApiResponse } from '@/types'
 
@@ -10,15 +11,13 @@ const authProxyRoutes = {
   logout: '/api/auth/logout',
 } as const
 
-const sameOrigin = ''
-
 export const authService = {
   login: async (email: string, password: string): Promise<AuthApiResponse> => {
     const response = await apiClient.post(
       authProxyRoutes.login,
       { email, password },
       undefined,
-      sameOrigin,
+      SAME_ORIGIN_API_BASE,
       true
     )
     return response as AuthApiResponse
@@ -33,7 +32,7 @@ export const authService = {
       authProxyRoutes.register,
       { fullName, email, password },
       undefined,
-      sameOrigin,
+      SAME_ORIGIN_API_BASE,
       true
     )
     return response as AuthApiResponse
@@ -53,7 +52,7 @@ export const authService = {
       authProxyRoutes.refresh,
       { refreshToken },
       undefined,
-      sameOrigin,
+      SAME_ORIGIN_API_BASE,
       true
     )) as AuthApiResponse
 

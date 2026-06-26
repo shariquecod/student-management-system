@@ -29,6 +29,7 @@ const carouselSlides: CarouselSlide[] = [
 ]
 
 const SLIDE_COUNT = carouselSlides.length
+const SLIDE_ANGLE = 360 / SLIDE_COUNT
 const AUTO_ADVANCE_MS = 4500
 
 interface Login3DSceneProps {
@@ -129,6 +130,10 @@ function SlideCard({
     <div className="login-saas-3d-slide-card">
       <div className="login-saas-3d-slide-card-depth">
         <div className="login-saas-3d-slide-card-layer login-saas-3d-slide-card-back" />
+        <div className="login-saas-3d-slide-card-layer login-saas-3d-slide-card-edge login-saas-3d-slide-card-edge-right" />
+        <div className="login-saas-3d-slide-card-layer login-saas-3d-slide-card-edge login-saas-3d-slide-card-edge-left" />
+        <div className="login-saas-3d-slide-card-layer login-saas-3d-slide-card-edge login-saas-3d-slide-card-edge-bottom" />
+
         <div className="login-saas-3d-slide-card-face">
           <div
             className={cn(
@@ -162,16 +167,23 @@ function SlideCard({
 export function Login3DScene({ className }: Login3DSceneProps) {
   const { t } = useTranslation()
   const rootRef = useRef<HTMLDivElement>(null)
-  const [activeIndex, setActiveIndex] = useState(0)
+  const [rotationStep, setRotationStep] = useState(0)
   const [reduceMotion, setReduceMotion] = useState(false)
   const [isVisible, setIsVisible] = useState(true)
 
+  const activeIndex = ((rotationStep % SLIDE_COUNT) + SLIDE_COUNT) % SLIDE_COUNT
+
   const goToSlide = useCallback((index: number) => {
-    setActiveIndex(index)
+    setRotationStep((prev) => {
+      const current = ((prev % SLIDE_COUNT) + SLIDE_COUNT) % SLIDE_COUNT
+      let delta = index - current
+      if (delta < 0) delta += SLIDE_COUNT
+      return prev + delta
+    })
   }, [])
 
   const goNext = useCallback(() => {
-    setActiveIndex((prev) => (prev + 1) % SLIDE_COUNT)
+    setRotationStep((prev) => prev + 1)
   }, [])
 
   useEffect(() => {
@@ -209,10 +221,36 @@ export function Login3DScene({ className }: Login3DSceneProps) {
       className={cn('login-saas-3d hidden lg:flex flex-col items-center justify-center', className)}
       aria-hidden
     >
-      <div className="login-saas-3d-viewport login-saas-3d-viewport-single">
-        <div className="login-saas-3d-stage login-saas-3d-stage-single">
-          <div key={activeSlide.id} className="login-saas-3d-single-card">
-            <SlideCard {...activeSlide} index={activeIndex} />
+      <div className="login-saas-3d-viewport">
+        <div className="login-saas-3d-stage">
+          <div className="login-saas-3d-orbit-track" />
+          <div className="login-saas-3d-orbit-track login-saas-3d-orbit-track-inner" />
+
+          <div
+            className="login-saas-3d-carousel"
+            style={
+              {
+                '--carousel-rotate': `${-rotationStep * SLIDE_ANGLE}deg`,
+              } as React.CSSProperties
+            }
+          >
+            {carouselSlides.map((slide, index) => (
+              <div
+                key={slide.id}
+                className={cn(
+                  'login-saas-3d-slide',
+                  `login-saas-3d-slide-${slide.id}`,
+                  index === activeIndex && 'login-saas-3d-slide-active'
+                )}
+                style={
+                  {
+                    '--slide-angle': `${index * SLIDE_ANGLE}deg`,
+                  } as React.CSSProperties
+                }
+              >
+                <SlideCard {...slide} index={index} />
+              </div>
+            ))}
           </div>
         </div>
       </div>

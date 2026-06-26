@@ -3017,7 +3017,7 @@
     }
   }
 
-  /* Login — ScholarFlow 3D showcase (left panel, single card) */
+  /* Login — ScholarFlow 3D carousel (left panel) */
   .login-saas-3d {
     @apply relative min-h-[480px] w-full py-2;
   }
@@ -3026,40 +3026,13 @@
     @apply w-full;
   }
 
-  .login-saas-3d-viewport-single {
-    overflow: hidden;
-  }
-
-  .login-saas-3d-stage-single {
-    position: relative;
-    top: auto;
-    left: auto;
-    margin: 0 auto;
-    transform: none;
-  }
-
-  .login-saas-3d-single-card {
-    animation: login-saas-3d-card-swap 0.45s cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  @keyframes login-saas-3d-card-swap {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-
   /* Login — initial panel arrival (left showcase + right form card) */
   @keyframes login-panel-arrive-left {
     from {
       opacity: 0;
-      transform: translateX(-32px) translateY(12px);
     }
     to {
       opacity: 1;
-      transform: translateX(0) translateY(0);
     }
   }
 
@@ -3083,7 +3056,6 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .login-saas-3d-single-card,
     .login-panel-arrive-left,
     .login-panel-arrive-right {
       animation: none !important;
@@ -3095,7 +3067,7 @@
     width: min(100%, 420px);
     height: 360px;
     margin-bottom: 0.75rem;
-    overflow: visible;
+    overflow: hidden;
     perspective: 1200px;
     perspective-origin: 50% 50%;
   }

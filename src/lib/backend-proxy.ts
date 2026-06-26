@@ -1,25 +1,25 @@
 import { loadEnvConfig } from '@next/env'
 import { NextRequest, NextResponse } from 'next/server'
+import { DEFAULT_BACKEND_API_URL, SAME_ORIGIN_API_BASE } from '@/lib/api-config'
 
-/** Browser calls use same-origin `/api/v1/*` — never the external backend URL directly. */
-export { SAME_ORIGIN_API_BASE } from '@/lib/api-config'
+export { SAME_ORIGIN_API_BASE }
 
 let envLoaded = false
 
-function ensureEnvLoaded() {
-  if (envLoaded) return
+function ensureLocalEnvLoaded() {
+  if (envLoaded || process.env.NODE_ENV === 'production') return
   loadEnvConfig(process.cwd())
   envLoaded = true
 }
 
-/** Read at request time — do not bake into next.config `env` (that can lock empty values). */
+/** Resolved at request time on the server (Vercel / local dev). */
 export function getBackendBaseUrl(): string {
-  ensureEnvLoaded()
+  ensureLocalEnvLoaded()
 
   const url =
     process.env.API_BASE_URL?.trim() ||
     process.env.NEXT_PUBLIC_API_BASE_URL?.trim() ||
-    ''
+    DEFAULT_BACKEND_API_URL
 
   return url.replace(/\/$/, '')
 }
@@ -68,7 +68,7 @@ export async function proxyToBackend({ method, path, body, headers = {} }: Proxy
       {
         success: false,
         message:
-          'Backend API URL is not configured. Set API_BASE_URL or NEXT_PUBLIC_API_BASE_URL in .env.local and restart the dev server.',
+          'Backend API URL is not configured. Set API_BASE_URL in Vercel → Settings → Environment Variables, then redeploy.',
       },
       { status: 500 }
     )

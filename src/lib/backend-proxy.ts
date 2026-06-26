@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server'
 
-const BACKEND_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, '') ??
-  process.env.API_BASE_URL?.replace(/\/$/, '')
+/** Read at request time so Next.js does not inline an empty build-time value. */
+export function getBackendBaseUrl(): string {
+  const url =
+    process.env['NEXT_PUBLIC_API_BASE_URL'] ??
+    process.env['API_BASE_URL'] ??
+    ''
 
-export function getBackendBaseUrl() {
-  return BACKEND_BASE_URL ?? ''
+  return url.trim().replace(/\/$/, '')
 }
 
 interface ProxyOptions {
@@ -16,15 +18,21 @@ interface ProxyOptions {
 }
 
 export async function proxyToBackend({ method, path, body, headers = {} }: ProxyOptions) {
-  if (!BACKEND_BASE_URL) {
+  const backendBaseUrl = getBackendBaseUrl()
+
+  if (!backendBaseUrl) {
     return NextResponse.json(
-      { success: false, message: 'Backend API URL is not configured' },
+      {
+        success: false,
+        message:
+          'Backend API URL is not configured. Set NEXT_PUBLIC_API_BASE_URL in .env.local and restart the dev server.',
+      },
       { status: 500 }
     )
   }
 
   try {
-    const response = await fetch(`${BACKEND_BASE_URL}${path}`, {
+    const response = await fetch(`${backendBaseUrl}${path}`, {
       method,
       headers: {
         Accept: 'application/json',
